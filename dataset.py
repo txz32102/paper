@@ -45,18 +45,18 @@ class pharos(Dataset):
         return data, label
 
     def Tclin(self):
-        Tclin_df = self.df[self.df['Target Development Level'] == 'Tclin']
+        Tclin_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tclin']
         return Tclin_df
     
     def Tbio(self):
-        Tbio_df = self.df[self.df['Target Development Level'] == 'Tbio']
+        Tbio_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tbio']
         return Tbio_df
     
     def Tdark(self):
-        Tdark_df = self.df[self.df['Target Development Level'] == 'Tdark']
+        Tdark_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tdark']
         return Tdark_df
     
     def Tchem(self):
-        Tchem_df = self.df[self.df['Target Development Level'] == 'Tchem']
+        Tchem_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tchem']
         return Tchem_df
     
