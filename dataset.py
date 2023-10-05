@@ -2,6 +2,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 import esm
+import numpy as np
 
 class pharos(Dataset):
     def __init__(self, dataframe, transform=None):
@@ -60,3 +61,33 @@ class pharos(Dataset):
         Tchem_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tchem']
         return Tchem_df
     
+    def sequence_len(self):
+        LEN = self.dataframe['SequenceColumn'].apply(lambda x: len(x))
+        return LEN
+    
+    def get_lowest_500_sequences(self):
+        # Calculate the length of each sequence
+        self.dataframe['SequenceLength'] = self.dataframe['sequence'].apply(lambda x: len(x))
+        
+        # Sort the DataFrame by SequenceLength in ascending order
+        sorted_df = self.dataframe.sort_values(by='SequenceLength', ascending=True)
+        
+        # Select the lowest 500 sequences
+        lowest_500_df = sorted_df.head(500)
+        
+        # Drop the 'SequenceLength' column if you don't need it in the final DataFrame
+        lowest_500_df = lowest_500_df.drop(columns=['SequenceLength'])
+        
+        # Reset the index
+        lowest_500_df = lowest_500_df.reset_index(drop=True)
+        
+        return lowest_500_df
+    
+    def vector_for_esm_embedding(self):
+        UniProt_id = self.dataframe['UniProt'].to_list()
+        sequence = self.dataframe['sequence'].to_list()
+        res = []
+        for i in range(len(UniProt_id)):
+            temp = (UniProt_id[i], sequence[i])
+            res.append(temp)
+        return res
