@@ -103,7 +103,7 @@ def main():
     data = pharos(data).get_lowest_500_sequences()
     data = pharos(data).vector_for_esm_embedding()
 
-    model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
+    model, alphabet = esm.pretrained.esm2_t12_35M_UR50D()
     batch_converter = alphabet.get_batch_converter()
     model.eval()  # disables dropout for deterministic results
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
