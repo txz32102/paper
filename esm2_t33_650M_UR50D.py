@@ -91,3 +91,32 @@ class pharos(Dataset):
             temp = (UniProt_id[i], sequence[i])
             res.append(temp)
         return res
+
+
+def main():
+    df = pd.read_csv('/kaggle/input/my-test/third_merge.csv')
+    df['sequence_length'] = df['sequence'].apply(len)
+    df_sorted = df.sort_values(by='sequence_length', ascending=False)
+    df = df_sorted.iloc[3000:3100]
+
+    data = pharos(df).get_lowest_500_sequences()
+    data = pharos(data).get_lowest_500_sequences()
+    data = pharos(data).vector_for_esm_embedding()
+
+    model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
+    batch_converter = alphabet.get_batch_converter()
+    model.eval()  # disables dropout for deterministic results
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+
+    data = data[1:3]
+    batch_labels, batch_strs, batch_tokens = batch_converter(data)
+    batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
+    batch_tokens = batch_tokens.to(device)
+    with torch.no_grad():
+        results = model(batch_tokens, repr_layers=[33], return_contacts=True)
+    token_representations = results["representations"][33]
+    sequence_representations = []
+    for i, tokens_len in enumerate(batch_lens):
+        sequence_representations.append(token_representations[i, 1 : tokens_len - 1].mean(0))
+
