@@ -183,3 +183,22 @@ def label_tackle(df):
     label_df = pd.read_csv('paper/raw_data/third_merge.csv')
     label_df['sequence_length'] = label_df['sequence'].apply(len)
     df_sorted = label_df.sort_values(by='sequence_length', ascending=True)
+
+    label_df = pd.DataFrame(label_df[['UniProt', 'Target Development Level']])
+
+    # Create a mapping dictionary for the Target Development Level values
+    level_mapping = {'Tclin': 1, 'Tdark': -1, 'Tbio': -2}
+
+    # Apply the mapping using the map function
+    label_df['Target Development Level'] = label_df['Target Development Level'].map(level_mapping).fillna(-3).astype(int)
+
+    # Convert the DataFrame to a list of lists
+    label_df_list = label_df.values.tolist()
+    embedded_data_label = pd.DataFrame(embedded_data['UniProt_id'])
+    # Convert label_df_list to a dictionary for easy mapping
+    label_dict = {row[0]: row[1] for row in label_df_list}
+
+    # Map 'UniProt_id' in embedded_data_label to 'UniProt' in label_df_list
+    embedded_data_label['label'] = embedded_data_label['UniProt_id'].map(label_dict)
+    embedded_data['label'] = embedded_data_label['label'] 
+    embedded_data.to_csv('embedded_data_with_label.csv', index=False)
