@@ -154,7 +154,8 @@ def min_batch(df_sorted, start_, end_):
     pbar.clear()
 
 
-def main():
+# this main funtion to used to generate data after embedding, note that not all the data is embedded since some sequences are too long for colab
+def get_embedded_data():
     if os.path.exists('output.csv'):
         os.remove('output.csv')
     model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
@@ -167,6 +168,7 @@ def main():
     df_sorted = df.sort_values(by='sequence_length', ascending=True)
     batch_size = 500
 
+    # embedding data is to Q96MM6 after sorted
     for epoch in range((len(df_sorted) - 3000) // batch_size):
         print(f"{epoch + 1} epoch(s)")
         start_ = 0 + batch_size * epoch
@@ -174,3 +176,10 @@ def main():
         df_data = df_sorted.iloc[start_:end_]
         df_data = pd.DataFrame(df_data)
         min_batch(df_data, 0, 500)
+    
+def label_tackle(df):
+    os.chdir('/home/musong/Desktop')
+    embedded_data = pd.read_csv('output0.csv')
+    label_df = pd.read_csv('paper/raw_data/third_merge.csv')
+    label_df['sequence_length'] = label_df['sequence'].apply(len)
+    df_sorted = label_df.sort_values(by='sequence_length', ascending=True)
