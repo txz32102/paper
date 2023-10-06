@@ -3,6 +3,9 @@ import torch
 from torch.utils.data import Dataset
 import esm
 import numpy as np
+import csv
+import os
+from tqdm import tqdm
 
 class pharos(Dataset):
     def __init__(self, dataframe, transform=None):
@@ -92,26 +95,21 @@ class pharos(Dataset):
             res.append(temp)
         return res
 
-
-def main():
-    df = pd.read_csv('/kaggle/input/my-test/third_merge.csv')
-    df['sequence_length'] = df['sequence'].apply(len)
-    df_sorted = df.sort_values(by='sequence_length', ascending=False)
-    df = df_sorted.iloc[1000:2000]
-
-    data = pharos(df).get_lowest_500_sequences()
-    data = pharos(data).get_lowest_500_sequences()
-    data = pharos(data).vector_for_esm_embedding()
-
+def esm_embeddings(peptide_sequence_list):
+    # NOTICE: ESM for embeddings is quite RAM usage, if your sequence is too long, 
+    #         or you have too many sequences for transformation in a single converting, 
+    #         you conputer might automatically kill the job.
+    # load the model
+    # NOTICE: if the model was not downloaded in your local environment, it will automatically download it.
     model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
     batch_converter = alphabet.get_batch_converter()
     model.eval()  # disables dropout for deterministic results
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
-
-    data = data[1:3]
-    batch_labels, batch_strs, batch_tokens = batch_converter(data)
+    # load the peptide sequence list into the bach_converter
+    batch_labels, batch_strs, batch_tokens = batch_converter(peptide_sequence_list)
     batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
+    ## batch tokens are the embedding results of the whole data set
     batch_tokens = batch_tokens.to(device)
     # Extract per-residue representations (on CPU)
     with torch.no_grad():
@@ -124,6 +122,50 @@ def main():
     # NOTE: token 0 is always a beginning-of-sequence token, so the first residue is token 1.
     sequence_representations = []
     for i, tokens_len in enumerate(batch_lens):
-        sequence_representations.append(token_representations[i, 1 : tokens_len - 1].mean(0))
+        sequence_representations.append((peptide_sequence_list[i][0], token_representations[i, 1 : tokens_len - 1].mean(0)))
+    return sequence_representations
 
+def to_csv(data, filename="output.csv"):
+    # Check if the file already exists
+    file_exists = os.path.exists(filename)
+
+    with open(filename, mode='a', newline='') as file:
+        writer = csv.writer(file)
+
+        # Write the header only if the file is empty
+        if not file_exists:
+            header = ["UniProt_id"] + [str(i) for i in range(1, 321)]
+            writer.writerow(header)
+        
+        for i in range(len(data)):
+            file.write(f'{data[i][0]}')
+            for j in range(320):
+                file.write(f',{data[i][1][j]}')
+            file.write('\n')
+
+
+def main():
+    df = pd.read_csv('/kaggle/input/my-test/third_merge.csv')
+    df['sequence_length'] = df['sequence'].apply(len)
+    df_sorted = df.sort_values(by='sequence_length', ascending=False)
+    df = df_sorted.iloc[-1001:-1]
+    df = pd.DataFrame(df)
+    data = pharos(df).get_lowest_500_sequences()
+    data = pharos(data).vector_for_esm_embedding()
+
+    # model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
+    # batch_converter = alphabet.get_batch_converter()
+    # model.eval()  # disables dropout for deterministic results
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # model.to(device)
+
+    batch_size = 10
+    total_batches = len(data) // batch_size + (1 if len(data) % batch_size != 0 else 0)
+    with tqdm(total=total_batches, desc="Processing Batches") as pbar:
+        for start in range(0, len(data), batch_size):
+            end = min(start + batch_size, len(data))
+            batch_data = data[start:end]
+            embeddings_data = esm_embeddings(batch_data)
+            to_csv(embeddings_data, "output.csv")
+            pbar.update(1)
 
