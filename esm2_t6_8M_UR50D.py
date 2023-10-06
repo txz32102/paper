@@ -49,19 +49,31 @@ class pharos(Dataset):
         return data, label
 
     def Tclin(self):
-        Tclin_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tclin']
+        if 'Target Development Level' in self.dataframe.columns:
+            Tclin_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tclin']
+        elif 'label' in self.dataframe.columns:
+            Tclin_df = self.dataframe[self.dataframe['label'] == 1]
         return Tclin_df
     
     def Tbio(self):
-        Tbio_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tbio']
+        if 'Target Development Level' in self.dataframe.columns:
+            Tbio_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tbio']
+        elif 'label' in self.dataframe.columns:
+            Tbio_df = self.dataframe[self.dataframe['label'] == -1]
         return Tbio_df
     
     def Tdark(self):
-        Tdark_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tdark']
+        if 'Target Development Level' in self.dataframe.columns:
+            Tdark_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tdark']
+        elif 'label' in self.dataframe.columns:
+            Tdark_df = self.dataframe[self.dataframe['label'] == -2]
         return Tdark_df
     
     def Tchem(self):
-        Tchem_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tchem']
+        if 'Target Development Level' in self.dataframe.columns:
+            Tchem_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tchem']
+        elif 'label' in self.dataframe.columns:
+            Tchem_df = self.dataframe[self.dataframe['label'] == -3]
         return Tchem_df
     
     def sequence_len(self):
@@ -201,3 +213,12 @@ def label_tackle(df):
     embedded_data_label['label'] = embedded_data_label['UniProt_id'].map(label_dict)
     embedded_data['label'] = embedded_data_label['label'] 
     embedded_data.to_csv('embedded_data_with_label.csv', index=False)
+
+def balanced_data(df):
+    df_Tclin = pharos(df).Tclin()
+    df_Tbio = pharos(df).Tbio()
+    df_Tchem = pharos(df).Tchem()
+    df_Tdark = pharos(df).Tdark()
+    train_df = pd.concat([df_Tclin.iloc[0:300], df_Tdark.iloc[0:300]], ignore_index=True)
+    test_df = pd.concat([df_Tclin.iloc[300:400], df_Tdark.iloc[300:400]], ignore_index=True)
+    return train_df, test_df
