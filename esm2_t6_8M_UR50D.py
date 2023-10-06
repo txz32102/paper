@@ -96,17 +96,11 @@ class pharos(Dataset):
         return res
 
 def esm_embeddings(peptide_sequence_list):
-    # NOTICE: ESM for embeddings is quite RAM usage, if your sequence is too long, 
-    #         or you have too many sequences for transformation in a single converting, 
-    #         you conputer might automatically kill the job.
-    # load the model
-    # NOTICE: if the model was not downloaded in your local environment, it will automatically download it.
     # model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
     # batch_converter = alphabet.get_batch_converter()
     # model.eval()  # disables dropout for deterministic results
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # model.to(device)
-    # load the peptide sequence list into the bach_converter
     batch_labels, batch_strs, batch_tokens = batch_converter(peptide_sequence_list)
     batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
     ## batch tokens are the embedding results of the whole data set
