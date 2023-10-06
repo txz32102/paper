@@ -101,11 +101,11 @@ def esm_embeddings(peptide_sequence_list):
     #         you conputer might automatically kill the job.
     # load the model
     # NOTICE: if the model was not downloaded in your local environment, it will automatically download it.
-    model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
-    batch_converter = alphabet.get_batch_converter()
-    model.eval()  # disables dropout for deterministic results
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model.to(device)
+    # model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
+    # batch_converter = alphabet.get_batch_converter()
+    # model.eval()  # disables dropout for deterministic results
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # model.to(device)
     # load the peptide sequence list into the bach_converter
     batch_labels, batch_strs, batch_tokens = batch_converter(peptide_sequence_list)
     batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
@@ -143,22 +143,11 @@ def to_csv(data, filename="output.csv"):
                 file.write(f',{data[i][1][j]}')
             file.write('\n')
 
-
-def main():
-    df = pd.read_csv('/kaggle/input/my-test/third_merge.csv')
-    df['sequence_length'] = df['sequence'].apply(len)
-    df_sorted = df.sort_values(by='sequence_length', ascending=False)
-    df = df_sorted.iloc[-1001:-1]
+def min_batch(df_sorted, start_, end_):
+    df = df_sorted.iloc[start_:end_]
     df = pd.DataFrame(df)
     data = pharos(df).get_lowest_500_sequences()
     data = pharos(data).vector_for_esm_embedding()
-
-    # model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
-    # batch_converter = alphabet.get_batch_converter()
-    # model.eval()  # disables dropout for deterministic results
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # model.to(device)
-
     batch_size = 10
     total_batches = len(data) // batch_size + (1 if len(data) % batch_size != 0 else 0)
     with tqdm(total=total_batches, desc="Processing Batches") as pbar:
@@ -168,4 +157,26 @@ def main():
             embeddings_data = esm_embeddings(batch_data)
             to_csv(embeddings_data, "output.csv")
             pbar.update(1)
+    pbar.clear()
 
+
+def main():
+    if os.path.exists('output.csv'):
+        os.remove('output.csv')
+    model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
+    batch_converter = alphabet.get_batch_converter()
+    model.eval()  # disables dropout for deterministic results
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    df = pd.read_csv('third_merge.csv')
+    df['sequence_length'] = df['sequence'].apply(len)
+    df_sorted = df.sort_values(by='sequence_length', ascending=True)
+    batch_size = 500
+
+    for epoch in range((len(df_sorted) - 3000) // batch_size):
+        print(f"{epoch + 1} epoch(s)")
+        start_ = 0 + batch_size * epoch
+        end_ = start_ + batch_size
+        df_data = df_sorted.iloc[start_:end_]
+        df_data = pd.DataFrame(df_data)
+        min_batch(df_data, 0, 500)
