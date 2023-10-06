@@ -182,7 +182,6 @@ def label_tackle(df):
     embedded_data = pd.read_csv('output0.csv')
     label_df = pd.read_csv('paper/raw_data/third_merge.csv')
     label_df['sequence_length'] = label_df['sequence'].apply(len)
-    df_sorted = label_df.sort_values(by='sequence_length', ascending=True)
 
     label_df = pd.DataFrame(label_df[['UniProt', 'Target Development Level']])
 
