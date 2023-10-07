@@ -222,3 +222,26 @@ def balanced_data(df):
     train_df = pd.concat([df_Tclin.iloc[0:300], df_Tdark.iloc[0:300]], ignore_index=True)
     test_df = pd.concat([df_Tclin.iloc[300:400], df_Tdark.iloc[300:400]], ignore_index=True)
     return train_df, test_df
+
+def data_fit(train_df, test_df):
+    X_train = train_df.iloc[:, 1:321]
+    y_train = train_df['label']
+    X_test = test_df.iloc[:, 1:321]
+    y_test = test_df['label']
+    return X_train, y_train, X_test, y_test
+
+def main():
+    os.chdir('/home/musong/Desktop')
+    df = pd.read_csv('/home/musong/Desktop/embedded_data_with_label.csv')   
+    train_df, test_df = balanced_data(df)
+    X_train, y_train, X_test, y_test = data_fit(train_df, test_df)
+    X_train = np.array(X_train)
+    y_train = np.array(y_train)
+    X_test = np.array(X_test)
+    y_test = np.array(y_test)
+    from sklearn.preprocessing import MinMaxScaler
+    scaler = MinMaxScaler()
+    scaler.fit(X_train)
+    X_train = scaler.transform(X_train) # normalize X to 0-1 range 
+    X_test = scaler.transform(X_test)
+    return X_train, y_train, X_test, y_test
