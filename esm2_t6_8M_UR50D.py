@@ -10,6 +10,7 @@ import numpy as np
 import csv
 import os
 from tqdm import tqdm
+from sklearn.utils import shuffle
 
 class pharos(Dataset):
     def __init__(self, dataframe, transform=None):
@@ -194,6 +195,7 @@ def get_embedded_data():
         min_batch(df_data, 0, 500)
     
 def label_tackle(df):
+    # os.chdir('/content/drive/MyDrive')
     os.chdir('/home/musong/Desktop')
     embedded_data = pd.read_csv('output0.csv')
     label_df = pd.read_csv('paper/raw_data/third_merge.csv')
@@ -228,10 +230,18 @@ def balanced_data(df):
     return train_df, test_df
 
 def data_fit(train_df, test_df):
+    np.random.seed(42)
     X_train = train_df.iloc[:, 1:321]
     y_train = train_df['label']
+    y_train[y_train != 1] = 0
     X_test = test_df.iloc[:, 1:321]
     y_test = test_df['label']
+    y_test[y_test != 1] = 0
+    # Shuffle the training data
+    X_train, y_train = shuffle(X_train, y_train, random_state=42)
+
+    # Shuffle the test data
+    X_test, y_test = shuffle(X_test, y_test, random_state=42)
     return X_train, y_train, X_test, y_test
 
 def main():
