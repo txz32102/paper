@@ -342,7 +342,7 @@ def ESM_CNN(X_train, y_train, X_test, y_test):
                             epochs=200,callbacks=callbacks_list,batch_size = 8, verbose=1)
     return model, model_history
 
-def train():
+def train(X_train, y_train):
     from sklearn.model_selection import KFold
     k = 10 
     kf = KFold(n_splits=k, shuffle = True, random_state=1)
@@ -389,4 +389,4 @@ def train():
     
 def main():
     X_train, y_train, X_test, y_test = train_and_test()
-    train()
+    train(X_train, y_train)
