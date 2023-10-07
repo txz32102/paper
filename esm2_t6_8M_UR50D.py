@@ -1,3 +1,7 @@
+# !pip install fair-esm
+# from google.colab import drive
+# drive.mount('/content/drive')
+
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
