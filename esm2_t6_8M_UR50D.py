@@ -386,3 +386,7 @@ def train():
         model.save('train1',save_format = 'tf') 
         # !zip -r /content/AHT_main_tensorflow_model.zip /content/AHT_main_tensorflow_model
         return ACC_collecton[0], BACC_collecton[0], Sn_collecton[0], MCC_collecton[0], AUC_collecton[0]
+    
+def main():
+    X_train, y_train, X_test, y_test = train_and_test()
+    train()
