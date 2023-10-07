@@ -113,11 +113,11 @@ class pharos(Dataset):
         return res
 
 def esm_embeddings(peptide_sequence_list):
-    # model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
-    # batch_converter = alphabet.get_batch_converter()
-    # model.eval()  # disables dropout for deterministic results
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # model.to(device)
+    model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
+    batch_converter = alphabet.get_batch_converter()
+    model.eval()  # disables dropout for deterministic results
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model.to(device)
     batch_labels, batch_strs, batch_tokens = batch_converter(peptide_sequence_list)
     batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
     ## batch tokens are the embedding results of the whole data set
@@ -195,8 +195,17 @@ def get_embedded_data():
         min_batch(df_data, 0, 500)
     
 def label_tackle(df):
-    # os.chdir('/content/drive/MyDrive')
-    os.chdir('/home/musong/Desktop')
+    # Check if the '/content' directory exists (for Colab)
+    if os.path.exists('/content'):
+        # Check if '/content/drive/MyDrive' exists (typical location in Colab)
+        if os.path.exists('/content/drive/MyDrive'):
+            os.chdir('/content/drive/MyDrive')
+        else:
+            # Change to '/home/musong/Desktop' if '/content/drive/MyDrive' doesn't exist
+            os.chdir('/home/musong/Desktop')
+    else:
+        # Change to '/home/musong/Desktop' if '/content' doesn't exist
+        os.chdir('/home/musong/Desktop')
     embedded_data = pd.read_csv('output0.csv')
     label_df = pd.read_csv('paper/raw_data/third_merge.csv')
     label_df['sequence_length'] = label_df['sequence'].apply(len)
@@ -245,8 +254,21 @@ def data_fit(train_df, test_df):
     return X_train, y_train, X_test, y_test
 
 def train_and_test():
-    os.chdir('/home/musong/Desktop')
-    df = pd.read_csv('/home/musong/Desktop/embedded_data_with_label.csv')   
+    # Check if the '/content' directory exists (for Colab)
+    if os.path.exists('/content'):
+        # Check if '/content/drive/MyDrive' exists (typical location in Colab)
+        if os.path.exists('/content/drive/MyDrive'):
+            os.chdir('/content/drive/MyDrive')
+            df = pd.read_csv('embedded_data_with_label.csv') 
+        else:
+            # Change to '/home/musong/Desktop' if '/content/drive/MyDrive' doesn't exist
+            os.chdir('/home/musong/Desktop')
+            df = pd.read_csv('/home/musong/Desktop/embedded_data_with_label.csv') 
+    else:
+        # Change to '/home/musong/Desktop' if '/content' doesn't exist
+        os.chdir('/home/musong/Desktop')
+        df = pd.read_csv('/home/musong/Desktop/embedded_data_with_label.csv') 
+      
     train_df, test_df = balanced_data(df)
     X_train, y_train, X_test, y_test = data_fit(train_df, test_df)
     X_train = np.array(X_train)
@@ -361,13 +383,6 @@ def train():
         from sklearn.metrics import roc_auc_score
         AUC = roc_auc_score(y_valid_CV, predicted_protability[:,1])
         AUC_collecton.append(AUC)
-
-def show_result():
-    print(ACC_collecton[0])
-    print(BACC_collecton[0])
-    print(Sn_collecton[0])
-    print(Sp_collecton[0])
-    print(MCC_collecton[0])
-    print(AUC_collecton[0])
-    model.save('AHT_main_tensorflow_model',save_format = 'tf') 
-    !zip -r /content/AHT_main_tensorflow_model.zip /content/AHT_main_tensorflow_model
+        model.save('train1',save_format = 'tf') 
+        # !zip -r /content/AHT_main_tensorflow_model.zip /content/AHT_main_tensorflow_model
+        return ACC_collecton[0], BACC_collecton[0], Sn_collecton[0], MCC_collecton[0], AUC_collecton[0]
