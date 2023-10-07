@@ -390,3 +390,5 @@ def train(X_train, y_train):
 def main():
     X_train, y_train, X_test, y_test = train_and_test()
     train(X_train, y_train)
+
+main()
