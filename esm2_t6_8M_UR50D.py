@@ -11,6 +11,7 @@ import csv
 import os
 from tqdm import tqdm
 from sklearn.utils import shuffle
+import tensorflow as tf
 
 class pharos(Dataset):
     def __init__(self, dataframe, transform=None):
@@ -387,6 +388,44 @@ def train(X_train, y_train):
         # !zip -r /content/AHT_main_tensorflow_model.zip /content/AHT_main_tensorflow_model
         return ACC_collecton[0], BACC_collecton[0], Sn_collecton[0], MCC_collecton[0], AUC_collecton[0]
     
+
+def load_model(model_type):
+    # Load the model with saved weights
+    loaded_model = tf.keras.models.load_model('model_type')
+
+    initial_learning_rate = 0.1
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        initial_learning_rate, decay_steps=10000, decay_rate=0.96, staircase=True
+    )
+
+    # Create an optimizer with the learning rate schedule
+    optimizer = tf.keras.optimizers.SGD(learning_rate=lr_schedule)
+
+    # Compile the loaded model with the same compile settings
+    loaded_model.compile(loss='sparse_categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+    return loaded_model
+
+
+def test(X_test, y_test):
+        # Check if the '/content' directory exists (for Colab)
+    if os.path.exists('/content'):
+        # Check if '/content/drive/MyDrive' exists (typical location in Colab)
+        if os.path.exists('/content/drive/MyDrive'):
+            os.chdir('/content/drive/MyDrive')
+        else:
+            # Change to '/home/musong/Desktop' if '/content/drive/MyDrive' doesn't exist
+            os.chdir('/home/musong/Desktop')
+    else:
+        # Change to '/home/musong/Desktop' if '/content' doesn't exist
+        os.chdir('/home/musong/Desktop')
+    model = load_model('train1')
+    predictions = model.predict(X_test)
+    predicted_classes = np.argmax(predictions, axis = 1)
+    correct_predictions = np.sum(predicted_classes == y_test)
+    total_samples = len(y_test)
+    accuracy = correct_predictions / total_samples
+    return accuracy
+
 def main():
     X_train, y_train, X_test, y_test = train_and_test()
     train(X_train, y_train)
