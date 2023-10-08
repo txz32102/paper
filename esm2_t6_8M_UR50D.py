@@ -309,8 +309,6 @@ def ESM_CNN(X_train, y_train, X_test, y_test):
     x = Dropout(0.15)(x)
     x = Dense(2,activation = 'softmax',name='fc2')(x)
     model = Model(inputs = input,outputs = x,name='Predict')
-    # define SGD optimizer
-    momentum = 0.5
 
     initial_learning_rate = 0.1
     lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
