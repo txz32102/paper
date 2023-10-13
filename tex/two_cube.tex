@@ -1,0 +1,18 @@
+\documentclass{standalone}
+\usepackage{tikz}
+\usepackage{xcolor}
+\begin{document}
+\begin{tikzpicture}
+\foreach \x in {0, ..., 5}
+{
+    \draw (0, \x, 5) -- (5, \x, 5);
+    \draw (\x, 0, 5) -- (\x, 5, 5);
+    \draw (5, \x, 5) --(5, \x, 0);
+    \draw (\x, 5, 5) -- (\x, 5, 0);
+    \draw (5, 0, \x) -- (5, 5, \x);
+    \draw (0, 5, \x) -- (5, 5, \x);
+}
+\fill[red](0, 5, 5) -- (1, 5, 5) -- (1, 4, 5) -- (0, 4, 5) --cycle;
+\fill[red](1, 5, 5) -- (2, 5, 5) -- (2, 4, 5) -- (1, 4, 5) --cycle;
+\end{tikzpicture}
+\end{document}
