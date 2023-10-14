@@ -20,7 +20,7 @@ class pharos(Dataset):
     def __init__(self, x, y):
         super(pharos, self).__init__()
         self.data = torch.from_numpy(x).float()
-        self.labels = torch.from_numpy(y).float()
+        self.labels = torch.from_numpy(y).long()
 
     def __len__(self):
         return len(self.labels)
@@ -33,7 +33,6 @@ class pharos(Dataset):
 
     def get_data(self):
         return self.data
-
 
 class Cnn(nn.Module):
     """
