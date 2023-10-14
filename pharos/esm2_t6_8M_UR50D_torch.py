@@ -15,6 +15,7 @@ from sklearn.metrics import confusion_matrix, roc_auc_score, matthews_corrcoef, 
 from sklearn.metrics import f1_score, accuracy_score, recall_score, precision_score, balanced_accuracy_score
 from sklearn.utils.class_weight import compute_class_weight
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
 
 class pharos(Dataset):
     def __init__(self, dataframe, transform=None):
@@ -676,60 +677,46 @@ def get_dataset_weight(labels: np.ndarray):
     weight = compute_class_weight('balanced', classes=np.unique(labels), y=np.squeeze(labels))
     return weight
 
-from sklearn.preprocessing import MinMaxScaler
+def main():
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    print(device)
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    X_train, y_train, X_test, y_test = train_and_test()
+    scalar = MinMaxScaler()
+    X_train = scalar.fit_transform(X_train)
+    X_test = scalar.fit_transform(X_test)
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-print(device)
-if torch.cuda.is_available():
-    torch.cuda.empty_cache()
-'''
-data normalization
-'''
+    plot_range = 10000  # range(1, 10000)
+    stratify = True
+    batch_size = 16
+    lr = 0.0001
+    epochs = 500
+    weight_decay = 0
 
-X_train, y_train, X_test, y_test = train_and_test()
-scalar = MinMaxScaler()
-X_train = scalar.fit_transform(X_train)
-X_test = scalar.fit_transform(X_test)
+    train_loss_log = os.path.join(os.getcwd(), "paper/model/pytorch/train_log.txt")
+    test_loss_log = os.path.join(os.getcwd(), "paper/model/pytorch/validation_log.txt")
+    checkpoint = os.path.join(os.getcwd(), 'paper/model/pytorch/bestmodel.pt')
 
-plot_range = 10000  # range(1, 10000)
-stratify = True
-batch_size = 16
-lr = 0.0001
-epochs = 500
-weight_decay = 0
+    y_train = get_mapped_labels(data=X_train, labels=y_train)
+    y_test = get_mapped_labels(data=X_test, labels=y_test)
+    weights = get_dataset_weight(y_train)
+    train_set = get_th_dataset(X_train, y_train)
+    test_set = get_th_dataset(X_test, y_test)
+    train_loader = get_dataloader(train_set, batch_size=batch_size)
+    test_loader = get_dataloader(test_set, batch_size=len(test_set))
 
-train_loss_log = os.path.join(os.getcwd(), "paper/model/pytorch/train_log.txt")
-test_loss_log = os.path.join(os.getcwd(), "paper/model/pytorch/validation_log.txt")
-checkpoint = os.path.join(os.getcwd(), 'paper/model/pytorch/bestmodel.pt')
+    model = Cnn(output_dim=1, input_dim=320, drop_out=0, stride=2)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    criteria = ASLSingleLabel(gamma_pos=1, gamma_neg=1, eps = 0.1)  # find the best hyperparameter
 
-'''
-get one-hot encoded labels
-'''
-y_train = get_mapped_labels(data=X_train, labels=y_train)
-y_test = get_mapped_labels(data=X_test, labels=y_test)
-'''
-get weights of imbalanced classes
-'''
-weights = get_dataset_weight(y_train)
-'''
-get train and test loaders
-'''
-train_set = get_th_dataset(X_train, y_train)
-test_set = get_th_dataset(X_test, y_test)
-train_loader = get_dataloader(train_set, batch_size=batch_size)
-test_loader = get_dataloader(test_set, batch_size=len(test_set))
-
-model = Cnn(output_dim=1, input_dim=320, drop_out=0, stride=2)
-optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-criteria = ASLSingleLabel(gamma_pos=1, gamma_neg=1, eps = 0.1)  # find the best hyperparameter
-
-train(model=model, EPOCHS=epochs, optimizer=optimizer, checkpoint=checkpoint, criteria=criteria,
-      train_set=train_loader, vali_set=test_loader, device=device, LOG_VALIDATION=test_loss_log, LOG_TRAIN=train_loss_log)
+    train(model=model, EPOCHS=epochs, optimizer=optimizer, checkpoint=checkpoint, criteria=criteria,
+        train_set=train_loader, vali_set=test_loader, device=device, LOG_VALIDATION=test_loss_log, LOG_TRAIN=train_loss_log)
 
 
-checkpoint = torch.load(checkpoint)
-saved_model = Cnn(output_dim=1, input_dim=320, drop_out=0, stride=2)
-saved_model.load_state_dict(checkpoint['model_state_dict'])
-saved_model.eval()
-report(saved_model, train_set)
-report(saved_model, test_set)
+    checkpoint = torch.load(checkpoint)
+    saved_model = Cnn(output_dim=1, input_dim=320, drop_out=0, stride=2)
+    saved_model.load_state_dict(checkpoint['model_state_dict'])
+    saved_model.eval()
+    report(saved_model, train_set)
+    report(saved_model, test_set)
