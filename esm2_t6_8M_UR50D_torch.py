@@ -210,7 +210,7 @@ def label_tackle(df):
     else:
         # Change to '/home/musong/Desktop' if '/content' doesn't exist
         os.chdir('/home/musong/Desktop')
-    embedded_data = pd.read_csv('output0.csv')
+    embedded_data = pd.read_csv('esm2_320_dimensions.csv')
     label_df = pd.read_csv('paper/raw_data/third_merge.csv')
     label_df['sequence_length'] = label_df['sequence'].apply(len)
 
@@ -231,7 +231,7 @@ def label_tackle(df):
     # Map 'UniProt_id' in embedded_data_label to 'UniProt' in label_df_list
     embedded_data_label['label'] = embedded_data_label['UniProt_id'].map(label_dict)
     embedded_data['label'] = embedded_data_label['label'] 
-    embedded_data.to_csv('embedded_data_with_label.csv', index=False)
+    embedded_data.to_csv('esm2_320_dimensions_with_labels.csv', index=False)
 
 def balanced_data(df):
     df_Tclin = pharos(df).Tclin()
@@ -263,15 +263,15 @@ def train_and_test():
         # Check if '/content/drive/MyDrive' exists (typical location in Colab)
         if os.path.exists('/content/drive/MyDrive'):
             os.chdir('/content/drive/MyDrive')
-            df = pd.read_csv('embedded_data_with_label.csv') 
+            df = pd.read_csv('esm2_320_dimensions_with_labels.csv') 
         else:
             # Change to '/home/musong/Desktop' if '/content/drive/MyDrive' doesn't exist
             os.chdir('/home/musong/Desktop')
-            df = pd.read_csv('/home/musong/Desktop/embedded_data_with_label.csv') 
+            df = pd.read_csv('/home/musong/Desktop/esm2_320_dimensions_with_labels.csv') 
     else:
         # Change to '/home/musong/Desktop' if '/content' doesn't exist
         os.chdir('/home/musong/Desktop')
-        df = pd.read_csv('/home/musong/Desktop/embedded_data_with_label.csv') 
+        df = pd.read_csv('/home/musong/Desktop/esm2_320_dimensions_with_labels.csv') 
       
     train_df, test_df = balanced_data(df)
     X_train, y_train, X_test, y_test = data_fit(train_df, test_df)
