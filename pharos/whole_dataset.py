@@ -1,161 +1,161 @@
+# !pip install fair-esm
+# from google.colab import drive
+# drive.mount('/content/drive')
+
 import torch 
+import torch.nn as nn 
+import torch.nn.functional as F
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import os
-from sklearn.utils import shuffle
-from torch.utils.data import Dataset
-import esm
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import accuracy_score
+from imblearn.over_sampling import SMOTE
+
 
 class pharos(Dataset):
-    def __init__(self, dataframe, transform=None):
-        """
-        Args:
-            dataframe (pandas.DataFrame): Pandas DataFrame containing your data.
-            transform (callable, optional): Optional transform to be applied to a sample.
-        """
-        self.dataframe = dataframe
-        self.transform = transform
+    def __init__(self, x, y):
+        super(pharos, self).__init__()
+        self.data = torch.from_numpy(x).float()
+        self.labels = torch.from_numpy(y).float()
 
     def __len__(self):
-        return len(self.dataframe)
+        return len(self.labels)
 
     def __getitem__(self, idx):
-        sample = self.dataframe.iloc[idx]
-        
-        # Extract data and label from the DataFrame
-        data = sample['sequence']  # Replace 'data_column_name' with the actual name of your data column
-        label = sample['Target Development Level']  # Replace 'label_column_name' with the actual name of your label column
-        
-        # Convert data and label to PyTorch tensors (you can apply transforms here if needed)
-        
-        if self.transform:
-            UniProt_id = sample['UniProt']
-            data = [(UniProt_id, data)]
-            model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
-            batch_converter = alphabet.get_batch_converter()
-            model.eval()  # disables dropout for deterministic results
-            batch_tokens = batch_converter(data)
+        return self.data[idx], self.labels[idx]
 
-            # Extract per-residue representations (on CPU)
-            with torch.no_grad():
-                results = model(batch_tokens[2], repr_layers=[33], return_contacts=True)
-            data = results
-            if label == 'Tclin':
-                label = torch.tensor([1])
-            else:
-                label = torch.tensor([0])
-        
-        return data, label
+    def get_labels(self):
+        return self.labels
 
-    def Tclin(self):
-        if 'Target Development Level' in self.dataframe.columns:
-            Tclin_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tclin']
-        elif 'label' in self.dataframe.columns:
-            Tclin_df = self.dataframe[self.dataframe['label'] == 1]
-        return Tclin_df
-    
-    def Tbio(self):
-        if 'Target Development Level' in self.dataframe.columns:
-            Tbio_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tbio']
-        elif 'label' in self.dataframe.columns:
-            Tbio_df = self.dataframe[self.dataframe['label'] == -1]
-        return Tbio_df
-    
-    def Tdark(self):
-        if 'Target Development Level' in self.dataframe.columns:
-            Tdark_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tdark']
-        elif 'label' in self.dataframe.columns:
-            Tdark_df = self.dataframe[self.dataframe['label'] == -2]
-        return Tdark_df
-    
-    def Tchem(self):
-        if 'Target Development Level' in self.dataframe.columns:
-            Tchem_df = self.dataframe[self.dataframe['Target Development Level'] == 'Tchem']
-        elif 'label' in self.dataframe.columns:
-            Tchem_df = self.dataframe[self.dataframe['label'] == -3]
-        return Tchem_df
-    
-    def sequence_len(self):
-        LEN = self.dataframe['SequenceColumn'].apply(lambda x: len(x))
-        return LEN
-    
-    def get_lowest_500_sequences(self):
-        # Calculate the length of each sequence
-        self.dataframe['SequenceLength'] = self.dataframe['sequence'].apply(lambda x: len(x))
-        
-        # Sort the DataFrame by SequenceLength in ascending order
-        sorted_df = self.dataframe.sort_values(by='SequenceLength', ascending=True)
-        
-        # Select the lowest 500 sequences
-        lowest_500_df = sorted_df.head(500)
-        
-        # Drop the 'SequenceLength' column if you don't need it in the final DataFrame
-        lowest_500_df = lowest_500_df.drop(columns=['SequenceLength'])
-        
-        # Reset the index
-        lowest_500_df = lowest_500_df.reset_index(drop=True)
-        
-        return lowest_500_df
-    
-    def vector_for_esm_embedding(self):
-        UniProt_id = self.dataframe['UniProt'].to_list()
-        sequence = self.dataframe['sequence'].to_list()
-        res = []
-        for i in range(len(UniProt_id)):
-            temp = (UniProt_id[i], sequence[i])
-            res.append(temp)
-        return res
-
-def balanced_data(df):
-    df_Tclin = pharos(df).Tclin()
-    df_Tbio = pharos(df).Tbio()
-    df_Tchem = pharos(df).Tchem()
-    df_Tdark = pharos(df).Tdark()
-    train_df = pd.concat([df_Tclin.iloc[0:300], df_Tdark.iloc[0:300]], ignore_index=True)
-    test_df = pd.concat([df_Tclin.iloc[300:400], df_Tdark.iloc[300:400]], ignore_index=True)
-    return train_df, test_df
-
-def data_fit(train_df, test_df):
-    np.random.seed(42)
-    X_train = train_df.iloc[:, 1:321]
-    y_train = train_df['label']
-    y_train[y_train != 1] = 0
-    X_test = test_df.iloc[:, 1:321]
-    y_test = test_df['label']
-    y_test[y_test != 1] = 0
-    # Shuffle the training data
-    X_train, y_train = shuffle(X_train, y_train, random_state=42)
-
-    # Shuffle the test data
-    X_test, y_test = shuffle(X_test, y_test, random_state=42)
-    return X_train, y_train, X_test, y_test
+    def get_data(self):
+        return self.data
 
 
-def train_and_test():
-    # Check if the '/content' directory exists (for Colab)
+class Cnn(nn.Module):
+    """
+    CNN model
+    """
+    def __init__(self, output_dim=1, input_dim=320, drop_out=0, stride=2):
+        super(Cnn, self).__init__()
+        self.output_dim = output_dim
+        self.input_dim = input_dim
+        self.drop_out = drop_out
+
+        self.kernel_1 = 3
+        self.channel_1 = 32
+
+        self.conv_1 = nn.Conv1d(kernel_size=self.kernel_1, out_channels=self.channel_1, in_channels=1, stride=1)
+        self.normalizer_1 = nn.BatchNorm1d(self.channel_1)
+        self.pooling_1 = nn.MaxPool1d(kernel_size=self.kernel_1, stride=stride)
+
+        self.dropout = nn.Dropout(p=drop_out)
+        self.fc1 = nn.LazyLinear(64)
+        self.normalizer_2 = nn.BatchNorm1d(64)
+        self.fc2 = nn.Linear(64, 2)
+
+    def forward(self, x):
+        x = torch.unsqueeze(x, dim=1)  # (batch, embedding_dim) -> (batch, 1, embedding_dim)
+        c_1 = self.pooling_1(F.relu(self.normalizer_1(self.conv_1(x))))
+
+        c_2 = torch.flatten(c_1, start_dim=1)
+        c_2 = self.dropout(c_2)
+        out = F.relu(self.normalizer_2(self.fc1(c_2)))
+        out = self.fc2(out)
+        out = torch.softmax(out, dim=-1)
+        return out
+
+
+def main():
     if os.path.exists('/content'):
-        # Check if '/content/drive/MyDrive' exists (typical location in Colab)
         if os.path.exists('/content/drive/MyDrive'):
             os.chdir('/content/drive/MyDrive')
             df = pd.read_csv('esm2_320_dimensions_with_labels.csv') 
         else:
-            # Change to '/home/musong/Desktop' if '/content/drive/MyDrive' doesn't exist
             os.chdir('/home/musong/Desktop')
             df = pd.read_csv('/home/musong/Desktop/esm2_320_dimensions_with_labels.csv') 
     else:
-        # Change to '/home/musong/Desktop' if '/content' doesn't exist
         os.chdir('/home/musong/Desktop')
         df = pd.read_csv('/home/musong/Desktop/esm2_320_dimensions_with_labels.csv') 
 
-    train_df, test_df = balanced_data(df)
-    X_train, y_train, X_test, y_test = data_fit(train_df, test_df)
-    X_train = np.array(X_train)
-    y_train = np.array(y_train)
-    X_test = np.array(X_test)
-    y_test = np.array(y_test)
-    from sklearn.preprocessing import MinMaxScaler
-    scaler = MinMaxScaler()
-    scaler.fit(X_train)
-    X_train = scaler.transform(X_train) # normalize X to 0-1 range 
-    X_test = scaler.transform(X_test)
-    return X_train, y_train, X_test, y_test
+    X = df.drop(['label', 'UniProt_id'], axis=1)
+    y = df['label'].apply(lambda x: 0 if x != 1 else x)
+
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    smote = SMOTE(random_state=42)
+    X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
+
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    scalar = MinMaxScaler()
+    X_train = scalar.fit_transform(X_train)
+    X_test = scalar.fit_transform(X_test)
+
+    batch_size = 16
+    lr = 0.0001
+    epochs = 10
+    weight_decay = 0
+
+
+    model = Cnn(output_dim=1, input_dim=320, drop_out=0, stride=2)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    criterion = nn.CrossEntropyLoss()
+
+    model = model.to(device)
+    train_set = pharos(np.array(X_resampled), np.array(y_resampled))
+    test_set = pharos(np.array(X_train), np.array(y_test))
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
+
+    for epoch in tqdm(range(epochs)):
+        running_loss = 0.0
+        train_predictions = []
+        train_labels = []
+        
+        # Training phase
+        model.train()  
+
+        for inputs, labels in train_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+
+            # Get class predictions (0, 1, 2, etc.) based on the class with the highest probability
+            class_predictions = torch.argmax(outputs, dim=1)
+
+            train_labels += labels.cpu().numpy().tolist()
+        model.eval()
+
+        test_loss = 0.0
+        correct_predictions = 0
+        total_predictions = 0
+
+        # Iterate through the test data using the test_loader
+        for inputs, labels in test_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            # Perform forward pass and calculate loss
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            test_loss += loss.item()
+
+            # Get class predictions (0, 1, 2, etc.) based on the class with the highest probability
+            class_predictions = torch.argmax(outputs, dim=1)
+
+            # Update correct_predictions and total_predictions
+            correct_predictions += (class_predictions == labels).sum().item()
+            total_predictions += labels.size(0)
+
+        # Calculate test accuracy and other metrics as needed
+        test_accuracy = correct_predictions / total_predictions
+        print(f'Test Accuracy: {test_accuracy * 100:.2f}%')
