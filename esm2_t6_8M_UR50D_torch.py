@@ -698,9 +698,9 @@ lr = 0.0001
 epochs = 500
 weight_decay = 0
 
-train_loss_log = os.path.join(os.getcwd(), "train_log.txt")
-test_loss_log = os.path.join(os.getcwd(), "validation_log.txt")
-checkpoint = os.path.join(os.getcwd(), 'bestmodel.pt')
+train_loss_log = os.path.join(os.getcwd(), "paper/model/pytorch/train_log.txt")
+test_loss_log = os.path.join(os.getcwd(), "paper/model/pytorch/validation_log.txt")
+checkpoint = os.path.join(os.getcwd(), 'paper/model/pytorch/bestmodel.pt')
 
 '''
 get one-hot encoded labels
