@@ -13,7 +13,6 @@ import os
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import accuracy_score
-from imblearn.over_sampling import SMOTE
 
 
 class pharos(Dataset):
@@ -86,9 +85,6 @@ def main():
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    smote = SMOTE(random_state=42)
-    X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
-
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     scalar = MinMaxScaler()
     X_train = scalar.fit_transform(X_train)
@@ -100,15 +96,15 @@ def main():
     weight_decay = 0
 
 
-    model = Cnn(output_dim=1, input_dim=320, drop_out=0, stride=2)
+    model = Cnn(output_dim=1, input_dim=320, drop_out=0.15, stride=2)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss()
 
     model = model.to(device)
-    train_set = pharos(np.array(X_resampled), np.array(y_resampled))
+    train_set = pharos(np.array(X_train), np.array(y_train))
     test_set = pharos(np.array(X_train), np.array(y_test))
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
     for epoch in tqdm(range(epochs)):
         running_loss = 0.0
