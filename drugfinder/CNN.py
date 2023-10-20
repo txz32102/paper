@@ -71,8 +71,6 @@ def get_th_dataset(x, y):
     _dataset = CustomDataset(x, y)
     return _dataset
 
-
-
 df = pd.read_csv('data/drugfinder/esm2_320_dimensions_with_labels.csv') 
 y = df['label'].apply(lambda x: 0 if x != 1 else x).to_numpy().astype(np.int64)
 X = df.drop(['label', 'UniProt_id'], axis=1)
@@ -81,19 +79,27 @@ scalar = MinMaxScaler()
 X_train = scalar.fit_transform(X_train)
 X_test = scalar.fit_transform(X_test)
 
-checkpoint = 'drugfinder/bestmodel.pt'
-checkpoint = torch.load(checkpoint)
-saved_model = Cnn(output_dim=1, input_dim=320, drop_out=0, stride=2)
-saved_model.load_state_dict(checkpoint['model_state_dict'])
-saved_model.eval()
+
+model = Cnn(output_dim=1, input_dim=320, drop_out=0, stride=2)
+model.load_state_dict(torch.load('drugfinder/CNN.pt'))
+model.eval()
 
 test_set = get_th_dataset(X_test, y_test)
-y_score = torch.argmax(saved_model(test_set.get_data()), dim=-1).cpu().numpy()
+y_score = torch.argmax(model(test_set.get_data()), dim=-1).cpu().numpy()
 y_test = test_set.get_labels().cpu().numpy()
 
 fpr, tpr, thresholds = roc_curve(y_test, y_score)
 fpr, tpr, thresholds = roc_curve(y_test, y_score)
 roc_auc = auc(fpr, tpr)
+
+mcc = matthews_corrcoef(y_test, y_score > 0.5)
+f1 = f1_score(y_test, y_score > 0.5)
+recall = recall_score(y_test, y_score > 0.5)
+
+print("MCC:", mcc)
+print("F1 Score:", f1)
+print("Recall:", recall)
+
 plt.figure()
 plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
 plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
@@ -104,4 +110,4 @@ plt.ylabel('True Positive Rate')
 plt.title('Receiver Operating Characteristic')
 plt.legend(loc="lower right")
 plt.show()
-plt.savefig('debug/temp0.png', dpi = 500)
+plt.savefig('debug/temp1.png', dpi = 500)

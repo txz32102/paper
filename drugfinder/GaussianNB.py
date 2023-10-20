@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
@@ -7,8 +6,7 @@ from sklearn.naive_bayes import GaussianNB
 import numpy as np
 import matplotlib.pyplot as plt
 
-file_path = os.path.join(os.getcwd(), "paper/data/drugfinder/esm2_320_dimensions_with_labels.csv") 
-df = pd.read_csv(file_path) 
+df = pd.read_csv('data/drugfinder/esm2_320_dimensions_with_labels.csv') 
 
 X = df.drop(['label', 'UniProt_id'], axis=1)
 y = df['label'].apply(lambda x: 0 if x != 1 else x).to_numpy().astype(np.int64)
