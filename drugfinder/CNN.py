@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, matthews_corrcoef, f1_score, recall_score
 
 class Cnn(Module):
     """
@@ -73,7 +73,7 @@ def get_th_dataset(x, y):
 
 
 
-df = pd.read_csv('/home/musong/Desktop/paper/data/drugfinder/esm2_320_dimensions_with_labels.csv') 
+df = pd.read_csv('data/drugfinder/esm2_320_dimensions_with_labels.csv') 
 y = df['label'].apply(lambda x: 0 if x != 1 else x).to_numpy().astype(np.int64)
 X = df.drop(['label', 'UniProt_id'], axis=1)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -81,7 +81,7 @@ scalar = MinMaxScaler()
 X_train = scalar.fit_transform(X_train)
 X_test = scalar.fit_transform(X_test)
 
-checkpoint = '/home/musong/Desktop/paper/drugfinder/bestmodel.pt'
+checkpoint = 'drugfinder/bestmodel.pt'
 checkpoint = torch.load(checkpoint)
 saved_model = Cnn(output_dim=1, input_dim=320, drop_out=0, stride=2)
 saved_model.load_state_dict(checkpoint['model_state_dict'])
@@ -104,3 +104,4 @@ plt.ylabel('True Positive Rate')
 plt.title('Receiver Operating Characteristic')
 plt.legend(loc="lower right")
 plt.show()
+plt.savefig('debug/temp0.png', dpi = 500)

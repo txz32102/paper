@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, matthews_corrcoef, f1_score, recall_score
 from sklearn.naive_bayes import GaussianNB
 import numpy as np
 import matplotlib.pyplot as plt
@@ -23,6 +23,14 @@ nb_classifier.fit(X_train, y_train)
 y_score = nb_classifier.predict_proba(X_test)[:, 1]
 fpr, tpr, thresholds = roc_curve(y_test, y_score)
 roc_auc = auc(fpr, tpr)
+
+mcc = matthews_corrcoef(y_test, y_score > 0.5)
+f1 = f1_score(y_test, y_score > 0.5)
+recall = recall_score(y_test, y_score > 0.5)
+
+print("MCC:", mcc)
+print("F1 Score:", f1)
+print("Recall:", recall)
 
 plt.figure()
 plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
