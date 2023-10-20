@@ -6,16 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
 from sklearn.ensemble import RandomForestClassifier
-if os.path.exists('/content'):
-    if os.path.exists('/content/drive/MyDrive'):
-        os.chdir('/content/drive/MyDrive')
-        df = pd.read_csv('esm2_320_dimensions_with_labels.csv') 
-    else:
-        os.chdir('/home/musong/Desktop')
-        df = pd.read_csv('/home/musong/Desktop/paper/data/drugfinder/esm2_320_dimensions_with_labels.csv') 
-else:
-    os.chdir('/home/musong/Desktop')
-    df = pd.read_csv('/home/musong/Desktop/paper/data/drugfinder/esm2_320_dimensions_with_labels.csv') 
+
+df = pd.read_csv('/home/musong/Desktop/paper/data/drugfinder/esm2_320_dimensions_with_labels.csv') 
 
 X = df.drop(['label', 'UniProt_id'], axis=1)
 y = df['label'].apply(lambda x: 0 if x != 1 else x).to_numpy().astype(np.int64)
