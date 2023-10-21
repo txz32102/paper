@@ -81,7 +81,7 @@ X_test = scalar.fit_transform(X_test)
 
 
 model = Cnn(output_dim=1, input_dim=320, drop_out=0, stride=2)
-model.load_state_dict(torch.load('drugfinder/CNN.pt'))
+model.load_state_dict(torch.load('drugfinder/CNN1.pt')['model_state_dict'])
 model.eval()
 
 test_set = get_th_dataset(X_test, y_test)
