@@ -89,7 +89,6 @@ y_score = torch.argmax(model(test_set.get_data()), dim=-1).cpu().numpy()
 y_test = test_set.get_labels().cpu().numpy()
 
 fpr, tpr, thresholds = roc_curve(y_test, y_score)
-fpr, tpr, thresholds = roc_curve(y_test, y_score)
 roc_auc = auc(fpr, tpr)
 
 mcc = matthews_corrcoef(y_test, y_score > 0.5)
