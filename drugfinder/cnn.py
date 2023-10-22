@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
-from sklearn.metrics import roc_curve, auc, matthews_corrcoef, f1_score, recall_score
+from sklearn.metrics import roc_curve, auc, matthews_corrcoef, f1_score, recall_score, accuracy_score
 
 class Cnn(Module):
     """
@@ -91,10 +91,12 @@ y_test = test_set.get_labels().cpu().numpy()
 fpr, tpr, thresholds = roc_curve(y_test, y_score)
 roc_auc = auc(fpr, tpr)
 
+accuracy = accuracy_score(y_test, y_score > 0.5)
 mcc = matthews_corrcoef(y_test, y_score > 0.5)
 f1 = f1_score(y_test, y_score > 0.5)
 recall = recall_score(y_test, y_score > 0.5)
 
+print("accuracy:", accuracy)
 print("MCC:", mcc)
 print("F1 Score:", f1)
 print("Recall:", recall)

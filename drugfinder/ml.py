@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import roc_curve, auc, matthews_corrcoef, f1_score, recall_score
+from sklearn.metrics import roc_curve, auc, matthews_corrcoef, f1_score, recall_score, accuracy_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
@@ -25,11 +25,13 @@ nb_classifier.fit(X_train, y_train)
 nb_y_predict = nb_classifier.predict_proba(X_test)[:, 1]
 nb_fpr, nb_tpr, _ = roc_curve(y_test, nb_y_predict)
 nb_roc_auc = auc(nb_fpr, nb_tpr)
+acc_nb = accuracy_score(y_test, nb_y_predict > 0.5)
 mcc_nb = matthews_corrcoef(y_test, nb_y_predict > 0.5)
 f1_nb = f1_score(y_test, nb_y_predict > 0.5)
 recall_nb = recall_score(y_test, nb_y_predict > 0.5)
 
 print('GaussianNB')
+print("accuracy:", acc_nb)
 print("MCC:", mcc_nb)
 print("F1 Score:", f1_nb)
 print("Recall:", recall_nb)
@@ -40,11 +42,13 @@ rf_classifier.fit(X_train, y_train)
 rf_y_predict = rf_classifier.predict_proba(X_test)[:, 1]
 rf_fpr, rf_tpr, _ = roc_curve(y_test, rf_y_predict)
 rf_roc_auc = auc(rf_fpr, rf_tpr)
+acc_rf = accuracy_score(y_test, rf_y_predict > 0.5)
 mcc_rf = matthews_corrcoef(y_test, rf_y_predict > 0.5)
 f1_rf = f1_score(y_test, rf_y_predict > 0.5)
 recall_rf = recall_score(y_test, rf_y_predict > 0.5)
 
 print('Random Forest')
+print("accuracy:", acc_rf)
 print("MCC:", mcc_rf)
 print("F1 Score:", f1_rf)
 print("Recall:", recall_rf)
@@ -55,11 +59,13 @@ svm_classifier.fit(X_train, y_train)
 svm_y_predict = svm_classifier.predict_proba(X_test)[:, 1]
 svm_fpr, svm_tpr, thresholds = roc_curve(y_test, svm_y_predict)
 svm_roc_auc = auc(svm_fpr, svm_tpr)
+acc_svm = accuracy_score(y_test, svm_y_predict > 0.5)
 mcc = matthews_corrcoef(y_test, svm_y_predict > 0.5)
 f1 = f1_score(y_test, svm_y_predict > 0.5)
 recall = recall_score(y_test, svm_y_predict > 0.5)
 
 print("SVM")
+print("accuracy:", acc_svm)
 print("MCC:", mcc)
 print("F1 Score:", f1)
 print("Recall:", recall)
