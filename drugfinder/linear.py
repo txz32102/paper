@@ -37,16 +37,15 @@ class Deep(nn.Module):
     
 model = Deep()
 model.load_state_dict(torch.load('drugfinder/linear.pt'))
-y = model(X_test)
 with torch.no_grad():
-    y_predict = (y.numpy() >= 0.5).astype(int)
-y_predict = y_predict.reshape(-1)
-y_test = y_test.numpy().reshape(-1)
+    y = model(X_test).reshape(-1)
+    y_predict = y.numpy()
+y_test = y_test.reshape(-1).numpy()
 
 fpr, tpr, thresholds = roc_curve(y_test, y_predict)
 roc_auc = auc(fpr, tpr)
 
-accuracy = accuracy_score(y_test, y_predict)
+accuracy = accuracy_score(y_test, y_predict > 0.5)
 mcc = matthews_corrcoef(y_test, y_predict > 0.5)
 f1 = f1_score(y_test, y_predict > 0.5)
 recall = recall_score(y_test, y_predict > 0.5)

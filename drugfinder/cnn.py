@@ -85,16 +85,26 @@ model.load_state_dict(torch.load('drugfinder/cnn.pt')['model_state_dict'])
 model.eval()
 
 test_set = get_th_dataset(X_test, y_test)
-y_score = torch.argmax(model(test_set.get_data()), dim=-1).cpu().numpy()
+with torch.no_grad():
+    y_score = model(test_set.get_data())
+y_predict = []
+for i in range(len(y_score)):
+    temp = y_score[i]
+    if(temp[0] >= 0.5):
+        temp_ = 1 - temp[0]
+    else:
+        temp_ = temp[1]
+    y_predict.append(temp_.item())
+y_predict = np.array(y_predict)
 y_test = test_set.get_labels().cpu().numpy()
 
-fpr, tpr, thresholds = roc_curve(y_test, y_score)
+fpr, tpr, thresholds = roc_curve(y_test, y_predict)
 roc_auc = auc(fpr, tpr)
 
-accuracy = accuracy_score(y_test, y_score > 0.5)
-mcc = matthews_corrcoef(y_test, y_score > 0.5)
-f1 = f1_score(y_test, y_score > 0.5)
-recall = recall_score(y_test, y_score > 0.5)
+accuracy = accuracy_score(y_test, y_predict > 0.5)
+mcc = matthews_corrcoef(y_test, y_predict > 0.5)
+f1 = f1_score(y_test, y_predict > 0.5)
+recall = recall_score(y_test, y_predict > 0.5)
 
 print("accuracy:", accuracy)
 print("MCC:", mcc)
