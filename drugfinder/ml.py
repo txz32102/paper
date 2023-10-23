@@ -7,6 +7,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 import numpy as np
 import matplotlib.pyplot as plt
+import umap
+import umap.plot
 
 # Load the dataset
 df = pd.read_csv('data/drugfinder/esm2_320_dimensions_with_labels.csv')
@@ -19,6 +21,7 @@ scalar = MinMaxScaler()
 X_train = scalar.fit_transform(X_train)
 X_test = scalar.fit_transform(X_test)
 
+mapper = umap.UMAP().fit(X_test)
 # Train Gaussian Naive Bayes
 nb_classifier = GaussianNB()
 nb_classifier.fit(X_train, y_train)
@@ -96,4 +99,12 @@ plt.legend(loc="lower right")
 # Save the figure
 plt.savefig('debug/ML.png', dpi=500)
 
-plt.show()  # Optionally display the plot interactively
+fig, axs = plt.subplots(2, 2)
+svm_y_predict = (svm_y_predict >= 0.5).astype(int)
+rf_y_predict = (rf_y_predict >= 0.5).astype(int)
+nb_y_predict = (nb_y_predict >= 0.5).astype(int)
+umap.plot.points(mapper, labels=svm_y_predict, ax=axs[0, 0])
+umap.plot.points(mapper, labels=rf_y_predict, ax=axs[0, 1])
+umap.plot.points(mapper, labels=nb_y_predict, ax=axs[1, 0])
+plt.show()
+plt.savefig("debug/umap_plot.png", dpi=500)
