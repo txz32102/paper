@@ -21,7 +21,7 @@ class Cnn(Module):
         self.kernel_1 = 3
         self.channel_1 = 32
 
-        self.conv_1 = Conv1d(kernel_size=self.kernel_1, out_channels=self.channel_1, in_channels=1, stride=1)
+        self.conv_1 = Conv1d(kernel_size=self.kernel_1, out_channels=self.channel_1, in_channels=1, stride=1, padding=1)
         self.normalizer_1 = BatchNorm1d(self.channel_1)
         self.pooling_1 = MaxPool1d(kernel_size=self.kernel_1, stride=stride)
 
