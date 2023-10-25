@@ -1,2 +1,7 @@
 debug/*
+
+# Ignore all files in the "drugfinder/plot/res/" directory
 drugfinder/plot/res/*
+
+# But allow the "test.txt" file
+!drugfinder/plot/res/test.txt
