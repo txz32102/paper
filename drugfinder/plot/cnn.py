@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc, matthews_corrcoef, f1_score, recall_score, accuracy_score
+import csv
 
 class Cnn(Module):
     """
@@ -78,47 +79,100 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 scalar = MinMaxScaler()
 X_train = scalar.fit_transform(X_train)
 X_test = scalar.fit_transform(X_test)
+test_set = get_th_dataset(X_test, y_test)
 
+
+model_type = [
+    'drugfinder/plot/res/kernel=3,epochs=100,cnn.pt',
+    'drugfinder/plot/res/kernel=3,epochs=300,cnn.pt',
+    'drugfinder/plot/res/kernel=3,epochs=500,cnn.pt',
+    'drugfinder/plot/res/kernel=5,epochs=100,cnn.pt',
+    'drugfinder/plot/res/kernel=5,epochs=300,cnn.pt',
+    'drugfinder/plot/res/kernel=5,epochs=500,cnn.pt',
+    'drugfinder/plot/res/kernel=7,epochs=100,cnn.pt',
+    'drugfinder/plot/res/kernel=7,epochs=300,cnn.pt',
+    'drugfinder/plot/res/kernel=7,epochs=500,cnn.pt',
+    'drugfinder/plot/res/kernel=9,epochs=100,cnn.pt',
+    'drugfinder/plot/res/kernel=9,epochs=300,cnn.pt',
+    'drugfinder/plot/res/kernel=9,epochs=500,cnn.pt',
+    'drugfinder/plot/res/kernel=11,epochs=100,cnn.pt',
+    'drugfinder/plot/res/kernel=11,epochs=300,cnn.pt',
+    'drugfinder/plot/res/kernel=11,epochs=500,cnn.pt',
+]
+
+def write_header():
+    header = pd.DataFrame({
+    'model_type': [],
+    'accuracy': [],
+    'mcc': [],
+    'f1 score': [],
+    'recall': [],
+    'fpr': [],
+    'tpr': []
+})
+
+# Save the header to a CSV file
+    header.to_csv('drugfinder/plot/res/plot.csv', index=False)
+
+def model_for_reference(model, model_type):
+    model.load_state_dict(torch.load(model_type)['model_state_dict'])
+    model.eval()
+
+    with torch.no_grad():
+        y_score = model(test_set.get_data())
+    y_predict = []
+    for i in range(len(y_score)):
+        temp = y_score[i]
+        if(temp[0] >= 0.5):
+            temp_ = 1 - temp[0]
+        else:
+            temp_ = temp[1]
+        y_predict.append(temp_.item())
+    y_predict = np.array(y_predict)
+    y_test = test_set.get_labels().cpu().numpy()
+
+    fpr, tpr, thresholds = roc_curve(y_test, y_predict)
+    roc_auc = auc(fpr, tpr)
+
+    accuracy = accuracy_score(y_test, y_predict > 0.5)
+    mcc = matthews_corrcoef(y_test, y_predict > 0.5)
+    f1 = f1_score(y_test, y_predict > 0.5)
+    recall = recall_score(y_test, y_predict > 0.5)
+
+    data = [model_type,accuracy, mcc,f1,recall]
+    with open('drugfinder/plot/res/plot.csv', 'a+', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(data)
+
+    print(model_type)
+    print("accuracy:", accuracy)
+    print("MCC:", mcc)
+    print("F1 Score:", f1)
+    print("Recall:", recall)
+    return fpr, tpr
+
+write_header()
+model = Cnn(kernel_size=3, output_dim=1, input_dim=320, drop_out=0, stride=2, padding=1)
+model_for_reference(model, model_type[0])
+model_for_reference(model, model_type[1])
+model_for_reference(model, model_type[2])
+
+model = Cnn(kernel_size=5, output_dim=1, input_dim=320, drop_out=0, stride=2, padding=2)
+model_for_reference(model, model_type[3])
+model_for_reference(model, model_type[4])
+model_for_reference(model, model_type[5])
 
 model = Cnn(kernel_size=7, output_dim=1, input_dim=320, drop_out=0, stride=2, padding=3)
-model.load_state_dict(torch.load('drugfinder/plot/res/kernel=7,epochs=500,cnn.pt')['model_state_dict'])
-model.eval()
+model_for_reference(model, model_type[6])
+model_for_reference(model, model_type[7])
+model_for_reference(model, model_type[8])
 
-test_set = get_th_dataset(X_test, y_test)
-with torch.no_grad():
-    y_score = model(test_set.get_data())
-y_predict = []
-for i in range(len(y_score)):
-    temp = y_score[i]
-    if(temp[0] >= 0.5):
-        temp_ = 1 - temp[0]
-    else:
-        temp_ = temp[1]
-    y_predict.append(temp_.item())
-y_predict = np.array(y_predict)
-y_test = test_set.get_labels().cpu().numpy()
+model = Cnn(kernel_size=9, output_dim=1, input_dim=320, drop_out=0, stride=2, padding=4)
+model_for_reference(model, model_type[9])
+model_for_reference(model, model_type[10])
+model_for_reference(model, model_type[11])
 
-fpr, tpr, thresholds = roc_curve(y_test, y_predict)
-roc_auc = auc(fpr, tpr)
-
-accuracy = accuracy_score(y_test, y_predict > 0.5)
-mcc = matthews_corrcoef(y_test, y_predict > 0.5)
-f1 = f1_score(y_test, y_predict > 0.5)
-recall = recall_score(y_test, y_predict > 0.5)
-
-print("accuracy:", accuracy)
-print("MCC:", mcc)
-print("F1 Score:", f1)
-print("Recall:", recall)
-
-plt.figure()
-plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
-plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('Receiver Operating Characteristic')
-plt.legend(loc="lower right")
-plt.show()
-plt.savefig('debug/CNN.png', dpi = 500)
+model = Cnn(kernel_size=11, output_dim=1, input_dim=320, drop_out=0, stride=2, padding=5)
+model_for_reference(model, model_type[12])
+model_for_reference(model, model_type[13])
+model_for_reference(model, model_type[14])
