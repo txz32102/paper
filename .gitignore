@@ -5,3 +5,5 @@ drugfinder/plot/res/*
 
 # But allow the "test.txt" file
 !drugfinder/plot/res/test.txt
+
+gpt2/debug[0-9][0-9].ipynb

@@ -21,13 +21,18 @@ import time
 import math
 import pickle
 from contextlib import nullcontext
-
 import numpy as np
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
-
-from model import GPTConfig, GPT
+from model import GPTConfig, GPT, get_dataloader, get_th_dataset, CustomDataset
+from torch.nn import Module, Conv1d, Linear, Dropout, MaxPool1d, functional as F, BatchNorm1d, LazyLinear
+from torch.utils.data import Dataset
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, auc, matthews_corrcoef, f1_score, recall_score, accuracy_score
 
 # -----------------------------------------------------------------------------
 # default config values designed to train a gpt2 (124M) on OpenWebText
@@ -44,7 +49,7 @@ wandb_log = False  # disabled by default
 wandb_project = "owt"
 wandb_run_name = "gpt2"  # 'run' + str(time.time())
 # data
-dataset = "openwebtext"
+dataset = "none"
 gradient_accumulation_steps = 5 * 8  # used to simulate larger batch sizes
 batch_size = 12  # if gradient_accumulation_steps > 1, this is the micro-batch size
 block_size = 1024
@@ -84,7 +89,18 @@ config_keys = [
     for k, v in globals().items()
     if not k.startswith("_") and isinstance(v, (int, float, bool, str))
 ]
-exec(open("configurator.py").read())  # overrides from command line or config file
+model_args = dict(
+    n_layer=4,
+    n_head=4,
+    n_embd=128,
+    block_size=64,
+    bias=False,
+    vocab_size=65,
+    dropout=0.0,
+)  # start with model_args from command line
+
+gptconf = GPTConfig(**model_args)
+model = GPT(gptconf)
 config = {k: globals()[k] for k in config_keys}  # will be useful for logging
 # -----------------------------------------------------------------------------
 
@@ -130,31 +146,39 @@ ctx = (
 )
 
 # poor man's data loader
-data_dir = os.path.join("data", dataset)
-train_data = np.memmap(os.path.join(data_dir, "train.bin"), dtype=np.uint16, mode="r")
-val_data = np.memmap(os.path.join(data_dir, "val.bin"), dtype=np.uint16, mode="r")
+# data_dir = os.path.join("data", dataset)
+# train_data = np.memmap(os.path.join(data_dir, "train.bin"), dtype=np.uint16, mode="r")
+# val_data = np.memmap(os.path.join(data_dir, "val.bin"), dtype=np.uint16, mode="r")
 
+
+
+
+df = pd.read_csv('data/drugfinder/esm2_320_dimensions_with_labels.csv') 
+X = df.drop(['label', 'UniProt_id'], axis=1)
+y = df['label'].apply(lambda x: 0 if x != 1 else x).to_numpy().astype(np.int64)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+scalar = MinMaxScaler()
+X_train = scalar.fit_transform(X_train)
+X_test = scalar.fit_transform(X_test)
+
+
+index_X_train = 0
 
 def get_batch(split):
-    data = train_data if split == "train" else val_data
-    ix = torch.randint(len(data) - block_size, (batch_size,))
-    x = torch.stack(
-        [torch.from_numpy((data[i : i + block_size]).astype(np.int64)) for i in ix]
-    )
-    y = torch.stack(
-        [
-            torch.from_numpy((data[i + 1 : i + 1 + block_size]).astype(np.int64))
-            for i in ix
-        ]
-    )
-    if device_type == "cuda":
-        # pin arrays x,y, which allows us to move them to GPU asynchronously (non_blocking=True)
-        x, y = x.pin_memory().to(device, non_blocking=True), y.pin_memory().to(
-            device, non_blocking=True
-        )
+    global index_X_train
+    batch_size = 12
+    num_samples = len(X_train)
+    
+    if index_X_train + batch_size >= num_samples:
+        # Wrap back to 0 when reaching the end of the data
+        batch = X_train[index_X_train: num_samples]
+        index_X_train = 0
     else:
-        x, y = x.to(device), y.to(device)
-    return x, y
+        # Get a batch without wrapping
+        batch = X_train[index_X_train: index_X_train + batch_size]
+        index_X_train += batch_size
+
+    return batch
 
 
 # init these up here, can override if init_from='resume' (i.e. from a checkpoint)
@@ -162,7 +186,7 @@ iter_num = 0
 best_val_loss = 1e9
 
 # attempt to derive vocab_size from the dataset
-meta_path = os.path.join(data_dir, "meta.pkl")
+meta_path = os.path.join('data_dir', "meta.pkl")
 meta_vocab_size = None
 if os.path.exists(meta_path):
     with open(meta_path, "rb") as f:
@@ -191,38 +215,7 @@ if init_from == "scratch":
     model_args["vocab_size"] = meta_vocab_size if meta_vocab_size is not None else 50304
     gptconf = GPTConfig(**model_args)
     model = GPT(gptconf)
-elif init_from == "resume":
-    print(f"Resuming training from {out_dir}")
-    # resume training from a checkpoint.
-    ckpt_path = os.path.join(out_dir, "ckpt.pt")
-    checkpoint = torch.load(ckpt_path, map_location=device)
-    checkpoint_model_args = checkpoint["model_args"]
-    # force these config attributes to be equal otherwise we can't even resume training
-    # the rest of the attributes (e.g. dropout) can stay as desired from command line
-    for k in ["n_layer", "n_head", "n_embd", "block_size", "bias", "vocab_size"]:
-        model_args[k] = checkpoint_model_args[k]
-    # create the model
-    gptconf = GPTConfig(**model_args)
-    model = GPT(gptconf)
-    state_dict = checkpoint["model"]
-    # fix the keys of the state dictionary :(
-    # honestly no idea how checkpoints sometimes get this prefix, have to debug more
-    unwanted_prefix = "_orig_mod."
-    for k, v in list(state_dict.items()):
-        if k.startswith(unwanted_prefix):
-            state_dict[k[len(unwanted_prefix) :]] = state_dict.pop(k)
-    model.load_state_dict(state_dict)
-    iter_num = checkpoint["iter_num"]
-    best_val_loss = checkpoint["best_val_loss"]
-elif init_from.startswith("gpt2"):
-    print(f"Initializing from OpenAI GPT-2 weights: {init_from}")
-    # initialize from OpenAI GPT-2 weights
-    override_args = dict(dropout=dropout)
-    model = GPT.from_pretrained(init_from, override_args)
-    # read off the created config params, so we can store them into checkpoint correctly
-    for k in ["n_layer", "n_head", "n_embd", "block_size", "bias", "vocab_size"]:
-        model_args[k] = getattr(model.config, k)
-# crop down the model block size if desired, using model surgery
+
 if block_size < model.config.block_size:
     model.crop_block_size(block_size)
     model_args[
@@ -237,19 +230,7 @@ scaler = torch.cuda.amp.GradScaler(enabled=(dtype == "float16"))
 optimizer = model.configure_optimizers(
     weight_decay, learning_rate, (beta1, beta2), device_type
 )
-if init_from == "resume":
-    optimizer.load_state_dict(checkpoint["optimizer"])
-checkpoint = None  # free up memory
 
-# compile the model
-if compile:
-    print("compiling the model... (takes a ~minute)")
-    unoptimized_model = model
-    model = torch.compile(model)  # requires PyTorch 2.0
-
-# wrap model into DDP container
-if ddp:
-    model = DDP(model, device_ids=[ddp_local_rank])
 
 
 # helps estimate an arbitrarily accurate loss over either split using many batches
@@ -384,6 +365,3 @@ while True:
     # termination conditions
     if iter_num > max_iters:
         break
-
-if ddp:
-    destroy_process_group()
