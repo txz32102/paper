@@ -218,12 +218,15 @@ class GPT(nn.Module):
         for block in self.transformer.h:
             x = block(x)
         x = self.transformer.ln_f(x)
-
+        print(f"shape of x is {x.shape}")
+        # torch.Size([1, 320, 128])
         if targets is not None:
             # if we are given some desired targets also calculate the loss
             logits = self.lm_head(x)
-            logits = self.classfication(logits)
-            logits = self.softmax(logits)
+            # logits = self.classfication(logits)
+            # logits = self.softmax(logits)
+            temp_1 = logits.view(-1, logits.size(-1)).shape
+            print(f"shape of logits.view(-1, logits.size(-1)) is {temp_1}")
             loss = F.cross_entropy(
                 logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1
             )
