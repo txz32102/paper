@@ -142,7 +142,7 @@ class GPTConfig:
     n_embd: int = 768
     dropout: float = 0.0
     bias: bool = True  # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
-    out: int = 10
+    out: int = 2
 
 
 class GPT(nn.Module):
@@ -163,7 +163,7 @@ class GPT(nn.Module):
         )
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         self.classfication = nn.Linear(config.vocab_size, config.out)
-        self.softmax = nn.Softmax(dim=1)
+        self.softmax = nn.Softmax(dim=2)
         # with weight tying when using torch.compile() some warnings get generated:
         # "UserWarning: functional_call was passed multiple values for tied weights.
         # This behavior is deprecated and will be an error in future versions"
@@ -204,27 +204,40 @@ class GPT(nn.Module):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, idx, targets=None):
+        # given input size is (1, 320)
         device = idx.device
+        # print(f"idx.shape is {idx.shape}")
+        # idx.shape is torch.Size([5, 320])
         b, t = idx.size()
+        # b is the batch size
+        # print(f"t is {t}")
+        # t is 320
         assert (
             t <= self.config.block_size
         ), f"Cannot forward sequence of length {t}, block size is only {self.config.block_size}"
         pos = torch.arange(0, t, dtype=torch.long, device=device)  # shape (t)
-
+        # print(f"pos.shape is {pos.shape}")
+        # pos.shape is torch.Size([320])
         # forward the GPT model itself
         tok_emb = self.transformer.wte(idx)  # token embeddings of shape (b, t, n_embd)
+        # print(f"tok_emb.shape is {tok_emb.shape}")
+        # tok_emb.shape is torch.Size([5, 320, 128])
         pos_emb = self.transformer.wpe(pos)  # position embeddings of shape (t, n_embd)
+        # print(f"pos_emb.shape is {pos_emb.shape}")
+        # pos_emb.shape is torch.Size([320, 128])
         x = self.transformer.drop(tok_emb + pos_emb)
         for block in self.transformer.h:
             x = block(x)
+            # print(f"x.shape is {x.shape}")
+            # x.shape is torch.Size([1, 320, 128])
         x = self.transformer.ln_f(x)
-        print(f"shape of x is {x.shape}")
+        # print(f"x.shape is {x.shape}")
         # torch.Size([1, 320, 128])
         if targets is not None:
             # if we are given some desired targets also calculate the loss
             logits = self.lm_head(x)
-            # logits = self.classfication(logits)
-            # logits = self.softmax(logits)
+            logits = self.classfication(logits)
+            logits = self.softmax(logits)
             temp_1 = logits.view(-1, logits.size(-1)).shape
             print(f"shape of logits.view(-1, logits.size(-1)) is {temp_1}")
             loss = F.cross_entropy(
@@ -235,7 +248,13 @@ class GPT(nn.Module):
             logits = self.lm_head(
                 x[:, [-1], :]
             )  # note: using list [-1] to preserve the time dim
-            loss = None
+            # print(f"logits.shape is {logits.shape}")
+            # logits.shape is torch.Size([1, 1, 65])
+            logits = self.classfication(logits)
+            # print(f"logits.shape is {logits}")
+            # logits shape is torch.Size([1, 1, 10])
+            logits = self.softmax(logits)
+            return logits
         return logits, loss
 
     def crop_block_size(self, block_size):
