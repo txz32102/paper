@@ -254,6 +254,8 @@ class GPT(nn.Module):
             # print(f"logits.shape is {logits}")
             # logits shape is torch.Size([1, 1, 10])
             logits = self.softmax(logits)
+            logits = logits.squeeze(1)
+            # shape like (10, 2)
             return logits
         return logits, loss
 
@@ -424,7 +426,7 @@ class GPT(nn.Module):
 class CustomDataset(Dataset):
     def __init__(self, x, y):
         super(CustomDataset, self).__init__()
-        self.data = torch.from_numpy(x).float()
+        self.data = torch.tensor(x)
         self.labels = torch.from_numpy(y).float()
 
     def __len__(self):
