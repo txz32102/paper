@@ -1,7 +1,14 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import roc_curve, auc, matthews_corrcoef, f1_score, recall_score, accuracy_score
+from sklearn.metrics import (
+    roc_curve,
+    auc,
+    matthews_corrcoef,
+    f1_score,
+    recall_score,
+    accuracy_score,
+)
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
@@ -11,12 +18,14 @@ import umap
 import umap.plot
 
 # Load the dataset
-df = pd.read_csv('data/drugfinder/esm2_320_dimensions_with_labels.csv')
+df = pd.read_csv("data/drugminer/esm2_320_dimensions_with_labels.csv")
 
 # Prepare the data
-X = df.drop(['label', 'UniProt_id'], axis=1)
-y = df['label'].apply(lambda x: 0 if x != 1 else x).to_numpy().astype(np.int64)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X = df.drop(["label", "UniProt_id"], axis=1)
+y = df["label"].apply(lambda x: 0 if x != 1 else x).to_numpy().astype(np.int64)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
 scalar = MinMaxScaler()
 X_train = scalar.fit_transform(X_train)
 X_test = scalar.fit_transform(X_test)
@@ -33,7 +42,7 @@ mcc_nb = matthews_corrcoef(y_test, nb_y_predict > 0.5)
 f1_nb = f1_score(y_test, nb_y_predict > 0.5)
 recall_nb = recall_score(y_test, nb_y_predict > 0.5)
 
-print('GaussianNB')
+print("GaussianNB")
 print("accuracy:", acc_nb)
 print("MCC:", mcc_nb)
 print("F1 Score:", f1_nb)
@@ -50,7 +59,7 @@ mcc_rf = matthews_corrcoef(y_test, rf_y_predict > 0.5)
 f1_rf = f1_score(y_test, rf_y_predict > 0.5)
 recall_rf = recall_score(y_test, rf_y_predict > 0.5)
 
-print('Random Forest')
+print("Random Forest")
 print("accuracy:", acc_rf)
 print("MCC:", mcc_rf)
 print("F1 Score:", f1_rf)
@@ -77,27 +86,35 @@ print("Recall:", recall)
 plt.figure(figsize=(8, 6))
 
 # Plot Gaussian Naive Bayes ROC curve
-plt.plot(nb_fpr, nb_tpr, color='darkorange', lw=2, label=f'Gaussian Naive Bayes (AUC = {nb_roc_auc:.2f})')
+plt.plot(
+    nb_fpr,
+    nb_tpr,
+    color="darkorange",
+    lw=2,
+    label=f"Gaussian Naive Bayes (AUC = {nb_roc_auc:.2f})",
+)
 
 # Plot Random Forest ROC curve
-plt.plot(rf_fpr, rf_tpr, color='blue', lw=2, label=f'Random Forest (AUC = {rf_roc_auc:.2f})')
+plt.plot(
+    rf_fpr, rf_tpr, color="blue", lw=2, label=f"Random Forest (AUC = {rf_roc_auc:.2f})"
+)
 
 # Plot SVM ROC curve
-plt.plot(svm_fpr, svm_tpr, color='pink', lw=2, label=f'SVM (AUC = {svm_roc_auc:.2f})')
+plt.plot(svm_fpr, svm_tpr, color="pink", lw=2, label=f"SVM (AUC = {svm_roc_auc:.2f})")
 
 # Plot the diagonal line for reference
-plt.plot([0, 1], [0, 1], color='gray', lw=2, linestyle='--')
+plt.plot([0, 1], [0, 1], color="gray", lw=2, linestyle="--")
 
 # Configure the plot
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('ROC Curves Comparison')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curves Comparison")
 plt.legend(loc="lower right")
 
 # Save the figure
-plt.savefig('debug/ML.png', dpi=500)
+plt.savefig("debug/ML.png", dpi=500)
 
 fig, axs = plt.subplots(2, 2)
 svm_y_predict = (svm_y_predict >= 0.5).astype(int)
