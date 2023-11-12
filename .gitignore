@@ -1,9 +1,9 @@
 debug/*
 
-# Ignore all files in the "drugfinder/plot/res/" directory
-drugfinder/plot/res/*
+# Ignore all files in the "drugminer/plot/res/" directory
+drugminer/plot/res/*
 
 # But allow the "test.txt" file
-!drugfinder/plot/res/test.txt
+!drugminer/plot/res/test.txt
 
 gpt2/debug[0-9][0-9].ipynb
