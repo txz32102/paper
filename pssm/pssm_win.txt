@@ -1,0 +1,3 @@
+psiblast -query input_sequence.fasta -db nr -num_iterations 3 -out output_results.txt -out_pssm output_pssm.txt
+
+psiblast -db C:\Users\13816\Documents\blast\swissprot -num_iterations 3 -inclusion_ethresh 0.001 -query C:\Users\13816\Desktop\pssm\ex1.fasta  -out_ascii_pssm C:\Users\13816\Desktop\pssm\ex1.csv
