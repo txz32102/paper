@@ -2,8 +2,8 @@
 # from google.colab import drive
 # drive.mount('/content/drive')
 
-import torch 
-import torch.nn as nn 
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
@@ -34,10 +34,12 @@ class pharos(Dataset):
     def get_data(self):
         return self.data
 
+
 class Cnn(nn.Module):
     """
     CNN model
     """
+
     def __init__(self, output_dim=1, input_dim=320, drop_out=0, stride=2):
         super(Cnn, self).__init__()
         self.output_dim = output_dim
@@ -47,7 +49,12 @@ class Cnn(nn.Module):
         self.kernel_1 = 3
         self.channel_1 = 32
 
-        self.conv_1 = nn.Conv1d(kernel_size=self.kernel_1, out_channels=self.channel_1, in_channels=1, stride=1)
+        self.conv_1 = nn.Conv1d(
+            kernel_size=self.kernel_1,
+            out_channels=self.channel_1,
+            in_channels=1,
+            stride=1,
+        )
         self.normalizer_1 = nn.BatchNorm1d(self.channel_1)
         self.pooling_1 = nn.MaxPool1d(kernel_size=self.kernel_1, stride=stride)
 
@@ -57,7 +64,9 @@ class Cnn(nn.Module):
         self.fc2 = nn.Linear(64, 2)
 
     def forward(self, x):
-        x = torch.unsqueeze(x, dim=1)  # (batch, embedding_dim) -> (batch, 1, embedding_dim)
+        x = torch.unsqueeze(
+            x, dim=1
+        )  # (batch, embedding_dim) -> (batch, 1, embedding_dim)
         c_1 = self.pooling_1(F.relu(self.normalizer_1(self.conv_1(x))))
 
         c_2 = torch.flatten(c_1, start_dim=1)
@@ -69,27 +78,28 @@ class Cnn(nn.Module):
 
 
 def main():
-    if os.path.exists('/content'):
-        if os.path.exists('/content/drive/MyDrive'):
-            os.chdir('/content/drive/MyDrive')
-            df = pd.read_csv('esm2_320_dimensions_with_labels.csv') 
+    if os.path.exists("/content"):
+        if os.path.exists("/content/drive/MyDrive"):
+            os.chdir("/content/drive/MyDrive")
+            df = pd.read_csv("esm2_320_dimensions_with_labels.csv")
         else:
-            os.chdir('/home/musong/Desktop')
-            df = pd.read_csv('/home/musong/Desktop/esm2_320_dimensions_with_labels.csv') 
+            os.chdir("/home/musong/Desktop")
+            df = pd.read_csv("/home/musong/Desktop/esm2_320_dimensions_with_labels.csv")
     else:
-        os.chdir('/home/musong/Desktop')
-        df = pd.read_csv('/home/musong/Desktop/esm2_320_dimensions_with_labels.csv') 
+        os.chdir("/home/musong/Desktop")
+        df = pd.read_csv("/home/musong/Desktop/esm2_320_dimensions_with_labels.csv")
 
-    X = df.drop(['label', 'UniProt_id'], axis=1)
-    y = df['label'].apply(lambda x: 0 if x != 1 else x)
+    X = df.drop(["label", "UniProt_id"], axis=1)
+    y = df["label"].apply(lambda x: 0 if x != 1 else x)
 
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
 
     smote = SMOTE(random_state=42)
     X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
 
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     scalar = MinMaxScaler()
     X_train = scalar.fit_transform(X_train)
     X_test = scalar.fit_transform(X_test)
@@ -98,7 +108,6 @@ def main():
     lr = 0.0001
     epochs = 10
     weight_decay = 0
-
 
     model = Cnn(output_dim=1, input_dim=320, drop_out=0, stride=2)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
@@ -114,9 +123,9 @@ def main():
         running_loss = 0.0
         train_predictions = []
         train_labels = []
-        
+
         # Training phase
-        model.train()  
+        model.train()
 
         for inputs, labels in train_loader:
             inputs, labels = inputs.to(device), labels.to(device)
@@ -157,4 +166,7 @@ def main():
 
         # Calculate test accuracy and other metrics as needed
         test_accuracy = correct_predictions / total_predictions
-        print(f'Test Accuracy: {test_accuracy * 100:.2f}%')
+        print(f"Test Accuracy: {test_accuracy * 100:.2f}%")
+
+
+main()
