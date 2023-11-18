@@ -12,7 +12,6 @@ import torch
 from torch.utils.data import Dataset
 import pandas as pd
 import numpy as np
-import torch.nn as nn
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
@@ -26,7 +25,7 @@ from sklearn.metrics import (
 )
 
 
-class Cnn(nn.Module):
+class Cnn(Module):
     """
     CNN model
     """
@@ -40,19 +39,20 @@ class Cnn(nn.Module):
         self.kernel_1 = 3
         self.channel_1 = 32
 
-        self.conv_1 = nn.Conv1d(
+        self.conv_1 = Conv1d(
             kernel_size=self.kernel_1,
             out_channels=self.channel_1,
             in_channels=1,
             stride=1,
+            padding=1,
         )
-        self.normalizer_1 = nn.BatchNorm1d(self.channel_1)
-        self.pooling_1 = nn.MaxPool1d(kernel_size=self.kernel_1, stride=stride)
+        self.normalizer_1 = BatchNorm1d(self.channel_1)
+        self.pooling_1 = MaxPool1d(kernel_size=self.kernel_1, stride=stride)
 
-        self.dropout = nn.Dropout(p=drop_out)
-        self.fc1 = nn.LazyLinear(64)
-        self.normalizer_2 = nn.BatchNorm1d(64)
-        self.fc2 = nn.Linear(64, 2)
+        self.dropout = Dropout(p=drop_out)
+        self.fc1 = LazyLinear(64)
+        self.normalizer_2 = BatchNorm1d(64)
+        self.fc2 = Linear(64, 2)
 
     def forward(self, x):
         x = torch.unsqueeze(
@@ -98,7 +98,7 @@ def get_th_dataset(x, y):
     return _dataset
 
 
-df = pd.read_csv("/home/musong/Desktop/esm2_320_dimensions_with_labels.csv")
+df = pd.read_csv("data/drugminer/esm2_320_dimensions_with_labels.csv")
 y = df["label"].apply(lambda x: 0 if x != 1 else x).to_numpy().astype(np.int64)
 X = df.drop(["label", "UniProt_id"], axis=1)
 X_train, X_test, y_train, y_test = train_test_split(
@@ -110,7 +110,7 @@ X_test = scalar.fit_transform(X_test)
 
 
 model = Cnn(output_dim=1, input_dim=320, drop_out=0, stride=2)
-model.load_state_dict(torch.load("pharos/bestmodel.pt")["model_state_dict"])
+model.load_state_dict(torch.load("drugminer/cnn.pt")["model_state_dict"])
 model.eval()
 
 test_set = get_th_dataset(X_test, y_test)
