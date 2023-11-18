@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 
-df = pd.read_csv("data/drugfinder/esm2_320_dimensions_with_labels.csv")
+df = pd.read_csv("data/drugminer/esm2_320_dimensions_with_labels.csv")
 X = df.drop(["label", "UniProt_id"], axis=1).values
 y = df["label"].apply(lambda x: 0 if x != 1 else x).values
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7, shuffle=True)
