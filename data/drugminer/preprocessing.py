@@ -19,15 +19,21 @@ def esm_embeddings(peptide_sequence_list):
     with torch.no_grad():
         # Here we export the last layer of the EMS model output as the representation of the peptides
         # model'esm2_t6_8M_UR50D' only has 6 layers, and therefore repr_layers parameters is equal to 6
-        results = model(batch_tokens, repr_layers=[6], return_contacts=True)  
+        results = model(batch_tokens, repr_layers=[6], return_contacts=True)
     token_representations = results["representations"][6]
 
     # Generate per-sequence representations via averaging
     # NOTE: token 0 is always a beginning-of-sequence token, so the first residue is token 1.
     sequence_representations = []
     for i, tokens_len in enumerate(batch_lens):
-        sequence_representations.append((peptide_sequence_list[i][0], token_representations[i, 1 : tokens_len - 1].mean(0)))
+        sequence_representations.append(
+            (
+                peptide_sequence_list[i][0],
+                token_representations[i, 1 : tokens_len - 1].mean(0),
+            )
+        )
     return sequence_representations
+
 
 def get_positive_peptide_sequence_list(file_path):
     peptide_sequence_list = []
@@ -48,7 +54,7 @@ def get_positive_peptide_sequence_list(file_path):
                 # If we have a previous sequence, add it to the list
                 peptide_sequence_list.append((current_identifier, current_sequence))
             # Extract the protein identifier between the first and second '|'
-            current_identifier = line.split('|')[1]
+            current_identifier = line.split("|")[1]
             current_sequence = ""  # Reset the current sequence
         else:
             # Append the line to the current sequence
@@ -58,6 +64,7 @@ def get_positive_peptide_sequence_list(file_path):
     if current_identifier is not None:
         peptide_sequence_list.append((current_identifier, current_sequence))
     return peptide_sequence_list
+
 
 def get_negative_peptide_sequence_list(file_path):
     peptide_sequence_list = []
@@ -89,14 +96,18 @@ def get_negative_peptide_sequence_list(file_path):
         peptide_sequence_list.append((current_identifier, current_sequence))
     return peptide_sequence_list
 
-def main():
-    columns = ["UniProt_id", "sequence", 'label','train or test from original data']
-    df = pd.DataFrame(columns=columns)
-    negative_test_path = 'data/drugfinder/fastadata/Independent_Test/negative_test_sequence.fasta'
-    positive_test_path = 'data/drugfinder/fastadata/Independent_Test/positive_test_sequence.fasta'
-    negative_train_path = 'data/drugfinder/fastadata/Train/negative_train_sequence.fasta'
-    positive_train_path = 'data/drugfinder/fastadata/Train/positive_train_sequence.fasta'
 
+def main():
+    columns = ["UniProt_id", "sequence", "label", "train or test from original data"]
+    df = pd.DataFrame(columns=columns)
+    negative_test_path = (
+        "data/drugminer/fastadata/Independent_Test/negative_test_sequence.fasta"
+    )
+    positive_test_path = (
+        "data/drugminer/fastadata/Independent_Test/positive_test_sequence.fasta"
+    )
+    negative_train_path = "data/drugminer/fastadata/Train/negative_train_sequence.fasta"
+    positive_train_path = "data/drugminer/fastadata/Train/positive_train_sequence.fasta"
 
     negative_test = get_negative_peptide_sequence_list(negative_test_path)
     for id, sequence in negative_test:
@@ -114,23 +125,28 @@ def main():
     for id, sequence in positive_test:
         row = [id, sequence, 1, "test"]
         df.loc[len(df)] = row
-    
-    df['sequence_length'] = df['sequence'].apply(len)
-    sorted_df = df.sort_values(by="sequence_length")
-    sorted_df.to_csv('temp.csv', index=False)
-    sorted_df = sorted_df[sorted_df['sequence_length'] <= 1000]
 
-    column_headers = ['Uniprot_id'] + list(range(1, 321)) + ['label']
+    df["sequence_length"] = df["sequence"].apply(len)
+    sorted_df = df.sort_values(by="sequence_length")
+    sorted_df.to_csv("temp.csv", index=False)
+    sorted_df = sorted_df[sorted_df["sequence_length"] <= 1000]
+
+    column_headers = ["UniProt_id"] + list(range(1, 321)) + ["label"]
     result_df = pd.DataFrame(columns=column_headers)
     for i in range(0, len(sorted_df)):
-        row= sorted_df.iloc[i]
-        embeddings= esm_embeddings([(row['Uniprot_id'], row['sequence'])])
-        data = [embeddings[0][0]] + embeddings[0][1].cpu().numpy().tolist() + [row['label']]
+        row = sorted_df.iloc[i]
+        embeddings = esm_embeddings([(row["UniProt_id"], row["sequence"])])
+        data = (
+            [embeddings[0][0]]
+            + embeddings[0][1].cpu().numpy().tolist()
+            + [row["label"]]
+        )
         result_df.loc[i] = data
         torch.cuda.empty_cache()
         if i % 100 == 0:
             tqdm.write(f"Processed {i+1} rows")
-        
-    result_df.to_csv('data/drugfinder/esm.csv', index=False)
+
+    result_df.to_csv("data/drugminer/esm2_320_dimensions_with_labels.csv", index=False)
+
 
 main()
