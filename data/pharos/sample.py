@@ -1,45 +1,48 @@
 import pandas as pd
 
-def read_fasta(file_path):
-    sequences = {'Header': [], 'Sequence': []}
-    current_header = None
-    current_sequence = ''
 
-    with open(file_path, 'r') as file:
+def read_fasta(file_path):
+    sequences = {"Header": [], "Sequence": []}
+    current_header = None
+    current_sequence = ""
+
+    with open(file_path, "r") as file:
         for line in file:
             line = line.strip()
-            if line.startswith('>'):
+            if line.startswith(">"):
                 # New header found
                 if current_header is not None:
-                    sequences['Header'].append(current_header)
-                    sequences['Sequence'].append(current_sequence)
+                    sequences["Header"].append(current_header)
+                    sequences["Sequence"].append(current_sequence)
                 current_header = line[1:]
-                current_sequence = ''
+                current_sequence = ""
             else:
                 # Continue building the sequence
                 current_sequence += line
 
         # Add the last sequence
         if current_header is not None:
-            sequences['Header'].append(current_header)
-            sequences['Sequence'].append(current_sequence)
+            sequences["Header"].append(current_header)
+            sequences["Sequence"].append(current_sequence)
 
     return pd.DataFrame(sequences)
 
+
 def extract_label(header):
     # Extract label after the "|" symbol
-    parts = header.split('|')
+    parts = header.split("|")
     if len(parts) > 1:
         return parts[1].strip()
     else:
         return None
 
-file_path = 'pharos.fasta'
+
+file_path = "data/pharos/pharos.fasta"
 fasta_df = read_fasta(file_path)
 
-fasta_df['Label'] = fasta_df['Header'].apply(extract_label)
-tclin_df = fasta_df[fasta_df['Label'] == 'Tclin']
-tdark_df = fasta_df[fasta_df['Label'] == 'Tdark']
+fasta_df["Label"] = fasta_df["Header"].apply(extract_label)
+tclin_df = fasta_df[fasta_df["Label"] == "Tclin"]
+tdark_df = fasta_df[fasta_df["Label"] == "Tdark"]
 length_tclin_df = len(tclin_df)
 
 random_tdark_df = tdark_df.sample(n=length_tclin_df, random_state=42)
@@ -53,15 +56,19 @@ import os
 test_size = 0.2
 
 # Split the positive sequences (Tclin) into train and test sets
-tclin_train, tclin_test = train_test_split(tclin_df, test_size=test_size, random_state=42)
+tclin_train, tclin_test = train_test_split(
+    tclin_df, test_size=test_size, random_state=42
+)
 
 # Split the negative sequences (Tdark) into train and test sets
-tdark_train, tdark_test = train_test_split(tdark_df, test_size=test_size, random_state=42)
+tdark_train, tdark_test = train_test_split(
+    tdark_df, test_size=test_size, random_state=42
+)
 
 # Create folders if they don't exist
 
-train_folder = "data/pharos/fastadata/Train"
-test_folder = "data/pharos/fastadata/Independent_Test"
+train_folder = "fastadata/Train"
+test_folder = "fastadata/Independent_Test"
 
 # Create folders if they don't exist
 for folder in [train_folder, test_folder]:
@@ -73,19 +80,22 @@ if not os.path.exists(train_folder):
 if not os.path.exists(test_folder):
     os.makedirs(test_folder)
 
+
 # Function to extract header before the '|' symbol
 def extract_header(identifier):
-    return identifier.split('|')[0]
+    return identifier.split("|")[0]
+
 
 # Function to write sequences to fasta file
 def write_fasta(filename, dataframe):
-    with open(filename, 'w') as file:
+    with open(filename, "w") as file:
         for index, row in dataframe.iterrows():
-            header = extract_header(row['Header'])
+            header = extract_header(row["Header"])
             file.write(f">{header}\n{row['Sequence']}\n")
 
+
 # Save the sequences to FASTA files in the train and test folders
-write_fasta(os.path.join(train_folder, 'positive_train_sequence.fasta'), tclin_train)
-write_fasta(os.path.join(test_folder, 'positive_test_sequence.fasta'), tclin_test)
-write_fasta(os.path.join(train_folder, 'negative_train_sequence.fasta'), tdark_train)
-write_fasta(os.path.join(test_folder, 'negative_test_sequence.fasta'), tdark_test)
+write_fasta(os.path.join(train_folder, "positive_train_sequence.fasta"), tclin_train)
+write_fasta(os.path.join(test_folder, "positive_test_sequence.fasta"), tclin_test)
+write_fasta(os.path.join(train_folder, "negative_train_sequence.fasta"), tdark_train)
+write_fasta(os.path.join(test_folder, "negative_test_sequence.fasta"), tdark_test)
