@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import umap
 import umap.plot
 import xgboost as xgb
+import seaborn as sns
 
 # Load the dataset
 df = pd.read_csv("data/drugminer/esm2_320_dimensions_with_labels.csv")
@@ -146,6 +147,8 @@ plt.plot(
 # Plot SVM ROC curve
 plt.plot(svm_fpr, svm_tpr, color="pink", lw=2, label=f"SVM (AUC = {svm_roc_auc:.2f})")
 
+plt.plot(xgb_fpr, xgb_tpr, color="green", lw=2, label=f"XGB (AUC = {svm_roc_auc:.2f})")
+
 # Plot the diagonal line for reference
 plt.plot([0, 1], [0, 1], color="gray", lw=2, linestyle="--")
 
@@ -160,17 +163,34 @@ plt.legend(loc="lower right")
 # Save the figure
 plt.savefig("debug/ML.png", dpi=500)
 
-fig, axs = plt.subplots(2, 2)
+
+# Assuming 'mapper' and the prediction variables are defined earlier in your code
+# (svm_y_predict, rf_y_predict, nb_y_predict, xgb_y_predict)
+
+# Setting the Seaborn style for better aesthetics
+sns.set(style="whitegrid")
+
+# Creating the subplots
+fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+
 svm_y_predict = (svm_y_predict >= 0.5).astype(int)
 rf_y_predict = (rf_y_predict >= 0.5).astype(int)
 nb_y_predict = (nb_y_predict >= 0.5).astype(int)
 xgb_y_predict = (xgb_y_predict >= 0.5).astype(int)
-umap.plot.points(mapper, labels=svm_y_predict, ax=axs[0, 0])
-umap.plot.points(mapper, labels=rf_y_predict, ax=axs[0, 1])
-umap.plot.points(mapper, labels=nb_y_predict, ax=axs[1, 0])
-umap.plot.points(mapper, labels=xgb_y_predict, ax=axs[1, 1])
 
+# Plotting the UMAP points with different labels
+umap.plot.points(mapper, labels=svm_y_predict, ax=axs[0, 0], theme="fire")
+umap.plot.points(mapper, labels=rf_y_predict, ax=axs[0, 1], theme="fire")
+umap.plot.points(mapper, labels=nb_y_predict, ax=axs[1, 0], theme="fire")
+umap.plot.points(mapper, labels=xgb_y_predict, ax=axs[1, 1], theme="fire")
+
+# Adjusting layout for better spacing
+plt.tight_layout()
+
+# Saving the plot
 plt.savefig("debug/umap_plot.png", dpi=500)
+
+# Displaying the plot
 plt.show()
 
 
