@@ -8,6 +8,8 @@ from sklearn.metrics import (
     f1_score,
     recall_score,
     accuracy_score,
+    precision_score,
+    confusion_matrix,
 )
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
@@ -41,12 +43,17 @@ acc_nb = accuracy_score(y_test, nb_y_predict > 0.5)
 mcc_nb = matthews_corrcoef(y_test, nb_y_predict > 0.5)
 f1_nb = f1_score(y_test, nb_y_predict > 0.5)
 recall_nb = recall_score(y_test, nb_y_predict > 0.5)
+tn, fp, fn, tp = confusion_matrix(y_test, nb_y_predict > 0.5).ravel()
+spe_nb = tn / (tn + fp)
+precision_nb = precision_score(y_test, nb_y_predict > 0.5)
 
 print("GaussianNB")
 print("accuracy:", acc_nb)
 print("MCC:", mcc_nb)
 print("F1 Score:", f1_nb)
 print("Recall:", recall_nb)
+print("Precision:", precision_nb)
+print("Specificity:", spe_nb)
 
 # Train Random Forest
 rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
@@ -58,12 +65,18 @@ acc_rf = accuracy_score(y_test, rf_y_predict > 0.5)
 mcc_rf = matthews_corrcoef(y_test, rf_y_predict > 0.5)
 f1_rf = f1_score(y_test, rf_y_predict > 0.5)
 recall_rf = recall_score(y_test, rf_y_predict > 0.5)
+tn, fp, fn, tp = confusion_matrix(y_test, rf_y_predict > 0.5).ravel()
+spe_rf = tn / (tn + fp)
+precision_rf = precision_score(y_test, rf_y_predict > 0.5)
 
 print("Random Forest")
 print("accuracy:", acc_rf)
 print("MCC:", mcc_rf)
 print("F1 Score:", f1_rf)
 print("Recall:", recall_rf)
+print("Precision:", precision_rf)
+print("Specificity:", spe_rf)
+
 
 # Train Support Vector Machine (SVM)
 svm_classifier = SVC(probability=True, random_state=42)
@@ -75,12 +88,18 @@ acc_svm = accuracy_score(y_test, svm_y_predict > 0.5)
 mcc = matthews_corrcoef(y_test, svm_y_predict > 0.5)
 f1 = f1_score(y_test, svm_y_predict > 0.5)
 recall = recall_score(y_test, svm_y_predict > 0.5)
+tn, fp, fn, tp = confusion_matrix(y_test, svm_y_predict > 0.5).ravel()
+spe_svm = tn / (tn + fp)
+precision_svm = precision_score(y_test, svm_y_predict > 0.5)
+
 
 print("SVM")
 print("accuracy:", acc_svm)
 print("MCC:", mcc)
 print("F1 Score:", f1)
 print("Recall:", recall)
+print("Precision:", precision_svm)
+print("Specificity:", spe_svm)
 
 # Create a new figure for both ROC curves
 plt.figure(figsize=(8, 6))
