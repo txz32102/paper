@@ -37,6 +37,7 @@ def extract_label(header):
 file_path = 'pharos.fasta'
 fasta_df = read_fasta(file_path)
 
+fasta_df['Label'] = fasta_df['Header'].apply(extract_label)
 tclin_df = fasta_df[fasta_df['Label'] == 'Tclin']
 tdark_df = fasta_df[fasta_df['Label'] == 'Tdark']
 length_tclin_df = len(tclin_df)
