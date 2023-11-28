@@ -170,9 +170,8 @@ umap.plot.points(mapper, labels=rf_y_predict, ax=axs[0, 1])
 umap.plot.points(mapper, labels=nb_y_predict, ax=axs[1, 0])
 umap.plot.points(mapper, labels=xgb_y_predict, ax=axs[1, 1])
 
-
-plt.show()
 plt.savefig("debug/umap_plot.png", dpi=500)
+plt.show()
 
 
 # ... plot ROC curves ...
@@ -184,5 +183,5 @@ plt.plot(
 # ... rest of your plotting code ...
 
 plt.legend(loc="lower right")
-plt.show()
 plt.savefig("debug/xgb.png", dpi=500)
+plt.show()
