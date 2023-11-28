@@ -18,6 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import umap
 import umap.plot
+import xgboost as xgb
 
 # Load the dataset
 df = pd.read_csv("data/drugminer/esm2_320_dimensions_with_labels.csv")
@@ -31,6 +32,30 @@ X_train, X_test, y_train, y_test = train_test_split(
 scalar = MinMaxScaler()
 X_train = scalar.fit_transform(X_train)
 X_test = scalar.fit_transform(X_test)
+
+xgb_classifier = xgb.XGBClassifier(use_label_encoder=False, eval_metric="logloss")
+xgb_classifier.fit(X_train, y_train)
+xgb_y_predict = xgb_classifier.predict_proba(X_test)[:, 1]
+xgb_fpr, xgb_tpr, _ = roc_curve(y_test, xgb_y_predict)
+xgb_roc_auc = auc(xgb_fpr, xgb_tpr)
+
+# Calculate performance metrics for XGBoost
+acc_xgb = accuracy_score(y_test, xgb_y_predict > 0.5)
+mcc_xgb = matthews_corrcoef(y_test, xgb_y_predict > 0.5)
+f1_xgb = f1_score(y_test, xgb_y_predict > 0.5)
+recall_xgb = recall_score(y_test, xgb_y_predict > 0.5)
+precision_xgb = precision_score(y_test, xgb_y_predict > 0.5)
+tn, fp, fn, tp = confusion_matrix(y_test, xgb_y_predict > 0.5).ravel()
+spe_xgb = tn / (tn + fp)
+
+print("XGBoost")
+print("Accuracy:", acc_xgb)
+print("MCC:", mcc_xgb)
+print("F1 Score:", f1_xgb)
+print("Recall:", recall_xgb)
+print("Precision:", precision_xgb)
+print("Specificity:", spe_xgb)
+
 
 mapper = umap.UMAP().fit(X_test)
 # Train Gaussian Naive Bayes
@@ -139,8 +164,25 @@ fig, axs = plt.subplots(2, 2)
 svm_y_predict = (svm_y_predict >= 0.5).astype(int)
 rf_y_predict = (rf_y_predict >= 0.5).astype(int)
 nb_y_predict = (nb_y_predict >= 0.5).astype(int)
+xgb_y_predict = (xgb_y_predict >= 0.5).astype(int)
 umap.plot.points(mapper, labels=svm_y_predict, ax=axs[0, 0])
 umap.plot.points(mapper, labels=rf_y_predict, ax=axs[0, 1])
 umap.plot.points(mapper, labels=nb_y_predict, ax=axs[1, 0])
+umap.plot.points(mapper, labels=xgb_y_predict, ax=axs[1, 1])
+
+
 plt.show()
 plt.savefig("debug/umap_plot.png", dpi=500)
+
+
+# ... plot ROC curves ...
+# Add XGBoost ROC curve
+plt.plot(
+    xgb_fpr, xgb_tpr, color="green", lw=2, label=f"XGBoost (AUC = {xgb_roc_auc:.2f})"
+)
+
+# ... rest of your plotting code ...
+
+plt.legend(loc="lower right")
+plt.show()
+plt.savefig("debug/xgb.png", dpi=500)
