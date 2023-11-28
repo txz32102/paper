@@ -54,7 +54,7 @@ def get_positive_peptide_sequence_list(file_path):
                 # If we have a previous sequence, add it to the list
                 peptide_sequence_list.append((current_identifier, current_sequence))
             # Extract the protein identifier between the first and second '|'
-            current_identifier = line.split("|")[1]
+            current_identifier = line[1:]
             current_sequence = ""  # Reset the current sequence
         else:
             # Append the line to the current sequence
@@ -128,8 +128,8 @@ def main():
 
     df["sequence_length"] = df["sequence"].apply(len)
     sorted_df = df.sort_values(by="sequence_length")
+    sorted_df = sorted_df[sorted_df["sequence_length"] <= 1000]
     sorted_df.to_csv("temp.csv", index=False)
-    # sorted_df = sorted_df[sorted_df["sequence_length"] <= 1000]
 
     column_headers = ["UniProt_id"] + list(range(1, 321)) + ["label"]
     result_df = pd.DataFrame(columns=column_headers)
@@ -147,3 +147,6 @@ def main():
             tqdm.write(f"Processed {i+1} rows")
 
     result_df.to_csv("data/pharos/esm2_320_dimensions_with_labels.csv", index=False)
+
+
+main()
