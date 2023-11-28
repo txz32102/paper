@@ -62,13 +62,13 @@ tclin_train, tclin_test = train_test_split(
 
 # Split the negative sequences (Tdark) into train and test sets
 tdark_train, tdark_test = train_test_split(
-    tdark_df, test_size=test_size, random_state=42
+    random_tdark_df, test_size=test_size, random_state=42
 )
 
 # Create folders if they don't exist
 
-train_folder = "fastadata/Train"
-test_folder = "fastadata/Independent_Test"
+train_folder = "data/pharos/fastadata/Train"
+test_folder = "data/pharos/fastadata/Independent_Test"
 
 # Create folders if they don't exist
 for folder in [train_folder, test_folder]:
