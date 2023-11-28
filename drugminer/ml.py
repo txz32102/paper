@@ -22,7 +22,7 @@ import xgboost as xgb
 import seaborn as sns
 
 # Load the dataset
-df = pd.read_csv("data/drugminer/esm2_320_dimensions_with_labels.csv")
+df = pd.read_csv("data/pharos/esm2_320_dimensions_with_labels.csv")
 
 # Prepare the data
 X = df.drop(["label", "UniProt_id"], axis=1)
@@ -208,3 +208,26 @@ plt.plot(
 plt.legend(loc="lower right")
 plt.savefig("debug/xgb.png", dpi=500)
 plt.show()
+
+
+import csv
+
+# Create a list of dictionaries containing classifier names, FPR, and TPR data
+roc_data = [
+    {"Classifier": "Gaussian Naive Bayes", "FPR": nb_fpr, "TPR": nb_tpr},
+    {"Classifier": "Random Forest", "FPR": rf_fpr, "TPR": rf_tpr},
+    {"Classifier": "SVM", "FPR": svm_fpr, "TPR": svm_tpr},
+    {"Classifier": "XGB", "FPR": xgb_fpr, "TPR": xgb_tpr},
+]
+
+# Specify the file name
+output_file = "matlab/drugminer_roc_data.csv"
+
+# Write the data to the CSV file
+with open(output_file, mode="w", newline="") as file:
+    fieldnames = ["Classifier", "FPR", "TPR"]
+    writer = csv.DictWriter(file, fieldnames=fieldnames)
+
+    writer.writeheader()
+    for data in roc_data:
+        writer.writerow(data)

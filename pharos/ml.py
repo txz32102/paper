@@ -208,3 +208,26 @@ plt.plot(
 plt.legend(loc="lower right")
 plt.savefig("debug/xgb.png", dpi=500)
 plt.show()
+
+
+import csv
+
+# Create a list of dictionaries containing classifier names, FPR, and TPR data
+roc_data = [
+    {"Classifier": "Gaussian Naive Bayes", "FPR": nb_fpr, "TPR": nb_tpr},
+    {"Classifier": "Random Forest", "FPR": rf_fpr, "TPR": rf_tpr},
+    {"Classifier": "SVM", "FPR": svm_fpr, "TPR": svm_tpr},
+    {"Classifier": "XGB", "FPR": xgb_fpr, "TPR": xgb_tpr},
+]
+
+# Specify the file name
+output_file = "matlab/pharos_roc_data.csv"
+
+# Write the data to the CSV file
+with open(output_file, mode="w", newline="") as file:
+    fieldnames = ["Classifier", "FPR", "TPR"]
+    writer = csv.DictWriter(file, fieldnames=fieldnames)
+
+    writer.writeheader()
+    for data in roc_data:
+        writer.writerow(data)
