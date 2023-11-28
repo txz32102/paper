@@ -178,11 +178,22 @@ rf_y_predict = (rf_y_predict >= 0.5).astype(int)
 nb_y_predict = (nb_y_predict >= 0.5).astype(int)
 xgb_y_predict = (xgb_y_predict >= 0.5).astype(int)
 
-# Plotting the UMAP points with different labels
-umap.plot.points(mapper, labels=svm_y_predict, ax=axs[0, 0], theme="fire")
-umap.plot.points(mapper, labels=rf_y_predict, ax=axs[0, 1], theme="fire")
-umap.plot.points(mapper, labels=nb_y_predict, ax=axs[1, 0], theme="fire")
-umap.plot.points(mapper, labels=xgb_y_predict, ax=axs[1, 1], theme="fire")
+umap.plot.points(
+    mapper, labels=svm_y_predict, ax=axs[0, 0], theme="fire", annotations=None
+)
+axs[0, 0].set_title("SVM Classifier")
+umap.plot.points(
+    mapper, labels=rf_y_predict, ax=axs[0, 1], theme="fire", annotations=None
+)
+axs[0, 1].set_title("Random Forest Classifier")
+umap.plot.points(
+    mapper, labels=nb_y_predict, ax=axs[1, 0], theme="fire", annotations=None
+)
+axs[1, 0].set_title("Naive Bayes Classifier")
+umap.plot.points(
+    mapper, labels=xgb_y_predict, ax=axs[1, 1], theme="fire", annotations=None
+)
+axs[1, 1].set_title("XGBoost Classifier")
 
 # Adjusting layout for better spacing
 plt.tight_layout()
