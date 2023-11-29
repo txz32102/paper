@@ -210,24 +210,18 @@ plt.savefig("debug/xgb.png", dpi=500)
 plt.show()
 
 
-import csv
+output_file = "matlab/pharos_roc_data.txt"
+with open(output_file, "w") as file:
+    # Iterate over the ROC data
+    for entry in roc_data:
+        classifier_name = entry['Classifier'].replace(' ', '_')
+        fpr = entry['FPR']
+        tpr = entry['TPR']
 
-# Create a list of dictionaries containing classifier names, FPR, and TPR data
-roc_data = [
-    {"Classifier": "Gaussian Naive Bayes", "FPR": nb_fpr, "TPR": nb_tpr},
-    {"Classifier": "Random Forest", "FPR": rf_fpr, "TPR": rf_tpr},
-    {"Classifier": "SVM", "FPR": svm_fpr, "TPR": svm_tpr},
-    {"Classifier": "XGB", "FPR": xgb_fpr, "TPR": xgb_tpr},
-]
+        # Convert the FPR numpy array to a string with square brackets
+        fpr_str = '[' + ', '.join(map(str, fpr)) + '];'
+        tpr_str = '[' + ', '.join(map(str, tpr)) + '];'
+        # Write the FPR and TPR values to the file in the desired format
+        file.write(f"{classifier_name}_FPR = {fpr_str}\n{classifier_name}_TPR = {tpr_str}\n")
 
-# Specify the file name
-output_file = "matlab/pharos_roc_data.csv"
-
-# Write the data to the CSV file
-with open(output_file, mode="w", newline="") as file:
-    fieldnames = ["Classifier", "FPR", "TPR"]
-    writer = csv.DictWriter(file, fieldnames=fieldnames)
-
-    writer.writeheader()
-    for data in roc_data:
-        writer.writerow(data)
+print(f"ROC data has been written to {output_file}")
