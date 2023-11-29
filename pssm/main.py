@@ -80,10 +80,9 @@ def main():
 
     fasta_dict = read_fasta(input_path)
     for key, value in fasta_dict.items():
-        file_name = os.path.join(data_path, key) + ".fasta"
-        with open(file_name, "w") as fasta_file:
+        input_file = os.path.join(data_path, key) + ".fasta"
+        with open(input_file, "w") as fasta_file:
             fasta_file.write(f">{key}\n{value}\n")
-        input_file = file_name
         output_file = os.path.join(pssm_path, key + ".pssm")
         run_psiblast(input_file, output_file, database_path)
 
