@@ -22,7 +22,7 @@ import xgboost as xgb
 import seaborn as sns
 
 # Load the dataset
-df = pd.read_csv("data/pharos/esm2_320_dimensions_with_labels.csv")
+df = pd.read_csv("data/drugminer/esm2_320_dimensions_with_labels.csv")
 
 # Prepare the data
 X = df.drop(["label", "UniProt_id"], axis=1)
@@ -210,19 +210,32 @@ plt.savefig("debug/xgb.png", dpi=500)
 plt.show()
 
 
+import csv
+
+# Create a list of dictionaries containing classifier names, FPR, and TPR data
+roc_data = [
+    {"Classifier": "Gaussian Naive Bayes", "FPR": nb_fpr, "TPR": nb_tpr},
+    {"Classifier": "Random Forest", "FPR": rf_fpr, "TPR": rf_tpr},
+    {"Classifier": "SVM", "FPR": svm_fpr, "TPR": svm_tpr},
+    {"Classifier": "XGB", "FPR": xgb_fpr, "TPR": xgb_tpr},
+]
+
+
 output_file = "matlab/drugminer_roc_data.txt"
 with open(output_file, "w") as file:
     # Iterate over the ROC data
     for entry in roc_data:
-        classifier_name = entry['Classifier'].replace(' ', '_')
-        fpr = entry['FPR']
-        tpr = entry['TPR']
+        classifier_name = entry["Classifier"].replace(" ", "_")
+        fpr = entry["FPR"]
+        tpr = entry["TPR"]
 
         # Convert the FPR numpy array to a string with square brackets
-        fpr_str = '[' + ', '.join(map(str, fpr)) + '];'
-        tpr_str = '[' + ', '.join(map(str, tpr)) + '];'
+        fpr_str = "[" + ", ".join(map(str, fpr)) + "];"
+        tpr_str = "[" + ", ".join(map(str, tpr)) + "];"
         # Write the FPR and TPR values to the file in the desired format
-        file.write(f"{classifier_name}_FPR = {fpr_str}\n{classifier_name}_TPR = {tpr_str}\n")
+        file.write(
+            f"{classifier_name}_FPR = {fpr_str}\n{classifier_name}_TPR = {tpr_str}\n"
+        )
 
 print(f"ROC data has been written to {output_file}")
 
