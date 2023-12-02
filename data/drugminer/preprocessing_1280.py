@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 
 def esm_embeddings(peptide_sequence_list):
-    model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
+    model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
     batch_converter = alphabet.get_batch_converter()
     model.eval()  # disables dropout for deterministic results
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -19,8 +19,8 @@ def esm_embeddings(peptide_sequence_list):
     with torch.no_grad():
         # Here we export the last layer of the EMS model output as the representation of the peptides
         # model'esm2_t6_8M_UR50D' only has 6 layers, and therefore repr_layers parameters is equal to 6
-        results = model(batch_tokens, repr_layers=[6], return_contacts=True)
-    token_representations = results["representations"][6]
+        results = model(batch_tokens, repr_layers=[33], return_contacts=True)
+    token_representations = results["representations"][33]
 
     # Generate per-sequence representations via averaging
     # NOTE: token 0 is always a beginning-of-sequence token, so the first residue is token 1.
@@ -146,7 +146,7 @@ def main():
         if i % 100 == 0:
             tqdm.write(f"Processed {i+1} rows")
 
-    result_df.to_csv("data/drugminer/esm2_320_dimensions_with_labels.csv", index=False)
+    result_df.to_csv("data/drugminer/esm2_1280_dimensions_with_labels.csv", index=False)
 
 
 main()
