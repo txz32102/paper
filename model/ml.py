@@ -161,7 +161,7 @@ plt.title("ROC Curves Comparison")
 plt.legend(loc="lower right")
 
 # Save the figure
-plt.savefig("debug/ML.png", dpi=500)
+plt.savefig("debug/ML.svg")
 
 
 # Assuming 'mapper' and the prediction variables are defined earlier in your code
@@ -191,7 +191,7 @@ axs[1, 1].set_title("XGBoost Classifier")
 plt.tight_layout()
 
 # Saving the plot
-plt.savefig("debug/umap_plot.png", dpi=500)
+plt.savefig("debug/umap_plot.svg")
 
 # Displaying the plot
 plt.show()
@@ -206,7 +206,7 @@ plt.plot(
 # ... rest of your plotting code ...
 
 plt.legend(loc="lower right")
-plt.savefig("debug/xgb.png", dpi=500)
+plt.savefig("debug/xgb.svg")
 plt.show()
 
 
