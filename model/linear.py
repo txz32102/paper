@@ -1,22 +1,20 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import (
-    roc_curve,
-    auc,
-    confusion_matrix
-)
+from sklearn.metrics import roc_curve, auc, confusion_matrix
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
+import seaborn as sns
+import umap
 
 df = pd.read_csv("data/drugminer/esm2_320_dimensions_with_labels.csv")
 X = df.drop(["label", "UniProt_id"], axis=1).values
 y = df["label"].apply(lambda x: 0 if x != 1 else x).values
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X, y, test_size=0.99, random_state=42
 )
 X_test = torch.tensor(X_test, dtype=torch.float32)
 y_test = torch.tensor(y_test, dtype=torch.float32).reshape(-1, 1)
@@ -44,9 +42,15 @@ class Deep(nn.Module):
         x = self.sigmoid(self.output(x))
         return x
 
+    def umap_layer3(self, x):
+        x = self.dropout1(self.act1(self.layer1(x)))
+        x = self.dropout2(self.act2(self.layer2(x)))
+        x = self.dropout3(self.act3(self.layer3(x)))
+        return x
+
 
 model = Deep()
-model.load_state_dict(torch.load("drugminer/linear.pt"))
+model.load_state_dict(torch.load("/home/musong/Desktop/paper/debug/best.pt"))
 with torch.no_grad():
     y = model(X_test).reshape(-1)
     y_predict = y.numpy()
@@ -63,7 +67,7 @@ precision = tp / (tp + fp)
 sensitivity = tp / (tp + fn)  # also known as recall
 specificity = tn / (tn + fp)
 f1_score = 2 * (precision * sensitivity) / (precision + sensitivity)
-mcc = ((tp * tn) - (fp * fn)) / ((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))**0.5
+mcc = ((tp * tn) - (fp * fn)) / ((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)) ** 0.5
 print("Accuracy: {:.4f}".format(accuracy))
 print("Precision: {:.4f}".format(precision))
 print("Sensitivity: {:.4f}".format(sensitivity))
@@ -81,4 +85,27 @@ plt.xlabel("False Positive Rate")
 plt.ylabel("True Positive Rate")
 plt.title("Receiver Operating Characteristic")
 plt.legend(loc="lower right")
+plt.show()
+
+
+X_test_np = model.umap_layer3(X_test).detach().numpy()
+
+y_test_np = y_test
+
+umap_reducer = umap.UMAP(
+    n_neighbors=15, min_dist=0.1, n_components=2, metric="euclidean"
+)
+umap_result = umap_reducer.fit_transform(X_test_np)
+
+plt.figure(figsize=(10, 7))
+
+sns.scatterplot(
+    x=umap_result[:, 0], y=umap_result[:, 1], hue=y_test_np, palette="viridis"
+)
+
+plt.title("UMAP Projection of the Last Layer Output")
+plt.xlabel("UMAP 1")
+plt.ylabel("UMAP 2")
+
+
 plt.show()
