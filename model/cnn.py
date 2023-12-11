@@ -69,6 +69,17 @@ class Cnn(Module):
         out = torch.softmax(out, dim=-1)
         return out
 
+    def last_three(self, x):
+        x = torch.unsqueeze(
+            x, dim=1
+        )  # (batch, embedding_dim) -> (batch, 1, embedding_dim)
+        c_1 = self.pooling_1(F.relu(self.normalizer_1(self.conv_1(x))))
+
+        c_2 = torch.flatten(c_1, start_dim=1)
+        c_2 = self.dropout(c_2)
+        out = F.relu(self.normalizer_2(self.fc1(c_2)))
+        return out
+
 
 class CustomDataset(Dataset):
     def __init__(self, x, y):
@@ -104,7 +115,7 @@ df = pd.read_csv("data/drugminer/esm2_320_dimensions_with_labels.csv")
 y = df["label"].apply(lambda x: 0 if x != 1 else x).to_numpy().astype(np.int64)
 X = df.drop(["label", "UniProt_id"], axis=1)
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X, y, test_size=0.99, random_state=42
 )
 scalar = MinMaxScaler()
 X_train = scalar.fit_transform(X_train)
@@ -164,3 +175,26 @@ plt.title("Receiver Operating Characteristic")
 plt.legend(loc="lower right")
 plt.show()
 plt.savefig("debug/CNN.png", dpi=500)
+
+
+X = model.last_three(test_set.get_data()).detach().numpy()
+y = test_set.get_labels().numpy()
+import seaborn as sns
+import umap
+
+umap_reducer = umap.UMAP(
+    n_neighbors=15, min_dist=0.1, n_components=2, metric="euclidean"
+)
+umap_result = umap_reducer.fit_transform(X)
+
+plt.figure(figsize=(6, 6))
+
+sns.scatterplot(x=umap_result[:, 0], y=umap_result[:, 1], hue=y_test, palette="viridis")
+
+plt.title("UMAP Projection of the Last Layer Output")
+plt.xlabel("UMAP 1")
+plt.ylabel("UMAP 2")
+
+
+plt.savefig("111.svg")
+plt.show()
