@@ -95,13 +95,12 @@ umap_reducer = umap.UMAP(
 )
 umap_result = umap_reducer.fit_transform(X_last_three)
 
-plt.figure(figsize=(10, 7))
+plt.figure(figsize=(6, 6))
 
 sns.scatterplot(x=umap_result[:, 0], y=umap_result[:, 1], hue=y_test, palette="viridis")
 
 plt.title("UMAP Projection of the Last Layer Output")
 plt.xlabel("UMAP 1")
 plt.ylabel("UMAP 2")
-
 
 plt.show()
