@@ -88,20 +88,16 @@ plt.legend(loc="lower right")
 plt.show()
 
 
-X_test_np = model.umap_layer3(X_test).detach().numpy()
-
-y_test_np = y_test
+X_last_three = model.umap_layer3(X_test).detach().numpy()
 
 umap_reducer = umap.UMAP(
     n_neighbors=15, min_dist=0.1, n_components=2, metric="euclidean"
 )
-umap_result = umap_reducer.fit_transform(X_test_np)
+umap_result = umap_reducer.fit_transform(X_last_three)
 
 plt.figure(figsize=(10, 7))
 
-sns.scatterplot(
-    x=umap_result[:, 0], y=umap_result[:, 1], hue=y_test_np, palette="viridis"
-)
+sns.scatterplot(x=umap_result[:, 0], y=umap_result[:, 1], hue=y_test, palette="viridis")
 
 plt.title("UMAP Projection of the Last Layer Output")
 plt.xlabel("UMAP 1")
