@@ -8,6 +8,8 @@ from sklearn.metrics import (
     f1_score,
     recall_score,
     accuracy_score,
+    confusion_matrix,
+    precision_score,
 )
 import numpy as np
 import matplotlib.pyplot as plt
@@ -56,15 +58,29 @@ y_test = y_test.reshape(-1).numpy()
 fpr, tpr, thresholds = roc_curve(y_test, y_predict)
 roc_auc = auc(fpr, tpr)
 
-accuracy = accuracy_score(y_test, y_predict > 0.5)
-mcc = matthews_corrcoef(y_test, y_predict > 0.5)
-f1 = f1_score(y_test, y_predict > 0.5)
-recall = recall_score(y_test, y_predict > 0.5)
+tn, fp, fn, tp = confusion_matrix(y_test, y_predict > 0.5).ravel()
 
-print("accuracy:", accuracy)
-print("MCC:", mcc)
-print("F1 Score:", f1)
-print("Recall:", recall)
+# Calculating ROC AUC
+fpr, tpr, thresholds = roc_curve(y_test, y_predict)
+roc_auc = auc(fpr, tpr)
+
+# Calculating other metrics
+accuracy = accuracy_score(y_test, y_predict > 0.5)
+precision = precision_score(y_test, y_predict > 0.5)
+sensitivity = recall_score(y_test, y_predict > 0.5)  # Sensitivity is the same as recall
+specificity = tn / (tn + fp)
+f_score = f1_score(y_test, y_predict > 0.5)
+mcc = matthews_corrcoef(y_test, y_predict > 0.5)
+
+# Printing the metrics
+print("Accuracy:", round(accuracy, 4))
+print("Precision:", round(precision, 4))
+print("Sensitivity (Recall):", round(sensitivity, 4))
+print("Specificity:", round(specificity, 4))
+print("F-score:", round(f_score, 4))
+print("Matthews Correlation Coefficient (MCC):", round(mcc, 4))
+print("ROC AUC:", round(roc_auc, 4))
+
 
 plt.figure()
 plt.plot(fpr, tpr, color="darkorange", lw=2, label=f"ROC curve (AUC = {roc_auc:.2f})")
