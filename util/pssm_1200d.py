@@ -1,3 +1,6 @@
+# example use
+# pssm_1200d('/home/musong/Downloads/Tclin/', '/home/musong/Desktop/train_pos.csv')
+
 from pssm import *
 import pandas as pd
 import os
