@@ -1,7 +1,7 @@
 # example use
 # pssm_1200d('/home/musong/Downloads/Tclin/', '/home/musong/Desktop/train_pos.csv')
 
-from pssm import *
+from .pssm import *
 import pandas as pd
 import os
 
@@ -9,7 +9,7 @@ import os
 # you should place the pssm files in a folder, then it will output the 1200 dimensional matrix
 def pssm_1200d(pssm_path, output_csv):
     data = []
-    header = ["id", "label"] + list(range(1, 1201))
+    header = ["Uniprot_id", "label"] + list(range(1, 1201))
     for file_name in os.listdir(pssm_path):
         if os.path.isfile(os.path.join(pssm_path, file_name)):
             file_path = os.path.join(pssm_path, file_name)
@@ -34,3 +34,18 @@ def pssm_1200d(pssm_path, output_csv):
 
     # Save to CSV
     df.to_csv(output_csv, index=False)
+
+
+def concatenate_csv(**kwargs):
+    # Create a list to store DataFrames
+    dataframes = []
+
+    # Loop through the keyword arguments and read each CSV file
+    for key, value in kwargs.items():
+        df = pd.read_csv(value)
+        dataframes.append(df)
+
+    # Concatenate all DataFrames with the same headers
+    concatenated_df = pd.concat(dataframes, ignore_index=True)
+    concatenated_df.to_csv("main.csv", index=False)
+    return concatenated_df
