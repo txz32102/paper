@@ -7,7 +7,7 @@ import os
 
 
 # you should place the pssm files in a folder, then it will output the 1200 dimensional matrix
-def pssm_1200d(pssm_path, output_csv):
+def pssm_1200d(pssm_path, output_csv, label):
     data = []
     header = ["Uniprot_id", "label"] + list(range(1, 1201))
     for file_name in os.listdir(pssm_path):
@@ -26,7 +26,8 @@ def pssm_1200d(pssm_path, output_csv):
             combined_features = np.concatenate(
                 (dpc_pssm_400, k_separated_bigrams_pssm_400, s_fpssm_400), axis=None
             )
-            row = [file_name] + [0] + list(combined_features)
+            file_name_without_extension, _ = os.path.splitext(file_name)
+            row = [file_name_without_extension] + [label] + list(combined_features)
             data.append(row)
 
     # Create a DataFrame
@@ -36,7 +37,7 @@ def pssm_1200d(pssm_path, output_csv):
     df.to_csv(output_csv, index=False)
 
 
-def concatenate_csv(**kwargs):
+def concatenate_csv(output_csv, **kwargs):
     # Create a list to store DataFrames
     dataframes = []
 
@@ -47,5 +48,8 @@ def concatenate_csv(**kwargs):
 
     # Concatenate all DataFrames with the same headers
     concatenated_df = pd.concat(dataframes, ignore_index=True)
-    concatenated_df.to_csv("main.csv", index=False)
+
+    # Save the concatenated DataFrame to the specified output CSV file
+    concatenated_df.to_csv(output_csv, index=False)
+
     return concatenated_df
