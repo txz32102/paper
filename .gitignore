@@ -10,3 +10,5 @@ gpt2/debug[0-9][0-9].ipynb
 
 # this file is too big to upload to github
 # data/pharos/esm2_320_dimensions_with_labels.csv 
+
+*[0-9].ipynb
